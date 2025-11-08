@@ -4,11 +4,11 @@
 export const ENTITLEMENT_ID = 'Premium';
 
 /** Product IDs (SKUs) as created in App Store Connect / Play Console / .storekit */
-export const PRODUCT_MONTHLY = 'com.alumabreath.premium_sub.monthly';
-export const PRODUCT_YEARLY  = 'com.alumabreath.premium_sub.yearly';
+export const PRODUCT_MONTHLY = 'aluma_monthly';
+export const PRODUCT_YEARLY  = 'aluma_yearly';
 
 /** RevenueCat Offering identifier you set as current in the dashboard. */
-export const OFFERING_ID = 'default';
+export const OFFERING_ID = 'Pro';
 
 /**
  * Preferred package identifiers in RevenueCat.

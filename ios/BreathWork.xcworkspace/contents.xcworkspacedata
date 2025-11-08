@@ -2,12 +2,6 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:default.storekit">
-   </FileRef>
-   <FileRef
-      location = "group:../../IAP.storekit">
-   </FileRef>
-   <FileRef
       location = "group:BreathWork.xcodeproj">
    </FileRef>
    <FileRef
