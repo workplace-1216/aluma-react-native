@@ -8,18 +8,18 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.BLACK_20,
     padding: 20,
     borderRadius: 37,
-    marginBottom: 20,
-    width: '90%',
+    marginBottom: 10,
+    width: 340,
   },
   title: {
-    fontSize: heightToFonts(2),
+    fontSize: heightToFonts(1.8),
     fontWeight: '700',
     fontFamily: Fonts.FigtreeSemi,
     color: colors.WHITE,
     marginBottom: heightToDP('1%'),
   },
   content: {
-    fontSize: heightToFonts(1.5),
+    fontSize: heightToFonts(1.3),
 
     color: colors.WHITE,
     fontFamily: Fonts.FigtreeMedium,

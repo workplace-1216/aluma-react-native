@@ -124,6 +124,7 @@ const GuidedVoiceSelectionModal = ({
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.tabRow}
+          nestedScrollEnabled
         >
           {voiceTabs.map((t, i) => {
             const selected = i === selectedTabIndex;

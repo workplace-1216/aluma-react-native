@@ -21,11 +21,12 @@ export default StyleSheet.create({
     backgroundColor: 'transparent',
   },
   text: {
-    fontSize: responsiveUtils.relativeFontSize(22),
-    lineHeight: responsiveUtils.relativeFontSize(22),
+    fontSize: responsiveUtils.relativeFontSize(21),
+    lineHeight: responsiveUtils.relativeFontSize(21),
     letterSpacing: responsiveUtils.relativeFontSize(22) * -0.03,
     fontFamily: Fonts.FigtreeMedium,
     color: colors.DARK_CYAN_BLUE,
+    fontWeight: '500',
   },
   outlineText: {
     color: colors.WHITE,

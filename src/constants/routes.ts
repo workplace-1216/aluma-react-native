@@ -24,5 +24,8 @@ const routes = {
   ABOUT: 'About',
   PRIVACY_SECURITY: 'PrivacySecurity',
   TERMS_CONDITION: 'TermsCondition',
+  SAVED_AUDIOS: 'SavedAudios',
+  SAVED_VIDEOS: 'SavedVideos',
+  FULLSCREEN_VIDEO: 'FullScreenVideo',
 } as const;
 export default routes;

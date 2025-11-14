@@ -3,7 +3,6 @@ import {View, TouchableOpacity, Text} from 'react-native';
 import {goBack} from '../../../navigation/AppNavigator';
 import Container from '../../../components/layout/Container';
 import {SvgChevronDown} from '../../../assets/svg';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import {styles} from './styles';
 import {useAppSelector} from '../../../redux/store';
 import {getBedtimeReminder} from '../../../service/notifications/bedtimeReminder';
@@ -11,7 +10,9 @@ import {getFcmToken} from '../../../utils/getFcmToken';
 import {updateBedtimeReminder} from '../../../service/notifications/updateBedtimeReminder';
 import {deleteBedtimeReminder} from '../../../service/notifications/deleteBedtimeReminder';
 import showToast from '../../../components/UI/CustomToast/CustomToast';
-import NotificationModal from '../../../components/Modals/NotficationModal';
+import NotificationModal, {
+  TimePickerModal,
+} from '../../../components/Modals/NotficationModal';
 import {HeaderWithBack} from '../../../components/UI/HeaderWithBack';
 import {SettingsOptionItem} from '../../../components/UI/SettingsOptionItem';
 import {SettingsOptionDivider} from '../../../components/UI/SettingsOptionDivider';
@@ -22,7 +23,6 @@ const BedtimeReminder: React.FC = () => {
   const [enableReminder, setEnableReminder] = useState<boolean | null>(null);
   const [selectedHour, setSelectedHour] = useState(10);
   const [selectedMinute, setSelectedMinute] = useState(50);
-  const [selectedAmPm, setSelectedAmPm] = useState('AM');
   const [frequency, setFrequency] = useState('Every day');
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
   const [isFrequencyModalVisible, setFrequencyModalVisible] = useState(false);
@@ -36,50 +36,60 @@ const BedtimeReminder: React.FC = () => {
   };
 
   const formatTime = () => {
+    const formattedHour =
+      selectedHour < 10 ? `0${selectedHour}` : selectedHour;
     const formattedMinute =
       selectedMinute < 10 ? `0${selectedMinute}` : selectedMinute;
-    return `${selectedHour}:${formattedMinute} ${selectedAmPm}`;
+    return `${formattedHour}:${formattedMinute}`;
   };
 
   const showTimePicker = () => {
     setTimePickerVisible(true);
   };
 
-  const hideTimePicker = async (time: string = '') => {
-    if (time !== '') {
-      try {
-        let days: string;
-        switch (frequency.toLowerCase()) {
-          case 'every day':
-            days = 'everyday';
-            break;
-          case 'week days':
-            days = 'weekdays';
-            break;
-          case 'weekends':
-            days = 'weekend';
-            break;
-          default:
-            days = '';
-        }
-        const fcmToken = await getFcmToken();
-
-        const body = {
-          userId: user._id,
-          time: time,
-          timezone: timezone,
-          days: days,
-          fcmToken: fcmToken,
-        };
-
-        await updateBedtimeReminder(body);
-      } catch (error) {
-        console.error('Time update failed:', error);
-        showToast('Failed to update time.', 'error');
-      }
-    }
-
+  const closeTimePicker = () => {
     setTimePickerVisible(false);
+  };
+
+  const mapFrequencyToDays = (value: string) => {
+    switch (value.toLowerCase()) {
+      case 'every day':
+        return 'everyday';
+      case 'week days':
+        return 'weekdays';
+      case 'weekends':
+        return 'weekend';
+      default:
+        return '';
+    }
+  };
+
+  const persistBedtimeTime = async (hour24: number, minute: number) => {
+    if (!user?._id) {return;}
+
+    try {
+      const fcmToken = await getFcmToken();
+      const body = {
+        userId: user._id,
+        time: `${hour24}:${minute}`,
+        timezone: timezone,
+        days: mapFrequencyToDays(frequency),
+        fcmToken: fcmToken,
+      };
+
+      await updateBedtimeReminder(body);
+    } catch (error) {
+      console.error('Time update failed:', error);
+      showToast('Failed to update time.', 'error');
+    }
+  };
+
+  const handleTimeConfirm = async (hour: number, minute: number) => {
+    setSelectedHour(hour);
+    setSelectedMinute(minute);
+
+    await persistBedtimeTime(hour, minute);
+    closeTimePicker();
   };
 
   const showFrequencyModal = () => {
@@ -97,40 +107,7 @@ const BedtimeReminder: React.FC = () => {
   const handleBedtimeReminderUpdate = async () => {
     if (enableReminder === null) {return;}
 
-    let hour;
-    if (selectedAmPm === 'PM' && selectedHour !== 12) {
-      hour = selectedHour + 12;
-    } else if (selectedAmPm === 'AM' && selectedHour === 12) {
-      hour = 0;
-    } else {
-      hour = selectedHour;
-    }
-    const time = `${hour}:${selectedMinute}`;
-
-    let days: string;
-    switch (frequency.toLowerCase()) {
-      case 'every day':
-        days = 'everyday';
-        break;
-      case 'week days':
-        days = 'weekdays';
-        break;
-      case 'weekends':
-        days = 'weekend';
-        break;
-      default:
-        days = '';
-    }
-    const fcmToken = await getFcmToken();
-
-    const body = {
-      userId: user._id,
-      time: time,
-      timezone: timezone,
-      days: days,
-      fcmToken: fcmToken,
-    };
-    await updateBedtimeReminder(body);
+    await persistBedtimeTime(selectedHour, selectedMinute);
   };
 
   useEffect(() => {
@@ -154,14 +131,10 @@ const BedtimeReminder: React.FC = () => {
           const [hourStr, minuteStr] = time.split(':');
           let hour = parseInt(hourStr, 10);
           const minute = parseInt(minuteStr, 10);
-          const amPm = hour >= 12 ? 'PM' : 'AM';
-          hour = hour % 12 === 0 ? 12 : hour % 12;
-
           // Set values
           setEnableReminder(true);
           setSelectedHour(hour);
           setSelectedMinute(minute);
-          setSelectedAmPm(amPm);
 
           // Map backend `days` value to the UI frequency string
           const frequencyMap: {[key: string]: string} = {
@@ -236,19 +209,12 @@ const BedtimeReminder: React.FC = () => {
           )}
         </View>
 
-        {/* Custom Time Picker Modal */}
-        <DateTimePickerModal
+        <TimePickerModal
           isVisible={isTimePickerVisible}
-          mode="time"
-          onConfirm={date => {
-            const hour = date.getHours();
-            const minute = date.getMinutes();
-            setSelectedHour(hour % 12 === 0 ? 12 : hour % 12);
-            setSelectedMinute(minute);
-            setSelectedAmPm(hour >= 12 ? 'PM' : 'AM');
-            hideTimePicker(`${hour}:${minute}`);
-          }}
-          onCancel={hideTimePicker}
+          onClose={closeTimePicker}
+          onConfirm={handleTimeConfirm}
+          selectedHour={selectedHour}
+          selectedMinute={selectedMinute}
         />
 
         <NotificationModal

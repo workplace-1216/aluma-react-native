@@ -18,6 +18,8 @@ export interface UserState {
   email: string;
   role: string;
   purpose: string;
+  provider?: string;
+  isAnonymous?: boolean;
   googleAccount?: boolean;
   allowNotifications?: boolean;
   dailyQouteNotification?: boolean;
@@ -36,6 +38,8 @@ const initialState: UserState = {
   email: '',
   role: '',
   purpose: '',
+  provider: '',
+  isAnonymous: false,
   googleAccount: false,
   allowNotifications: false,
   dailyQouteNotification: false,

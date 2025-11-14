@@ -1,3 +1,4 @@
+// styles.ts
 import { StyleSheet } from 'react-native';
 import colors from '../../../assets/colors';
 
@@ -6,115 +7,81 @@ const ITEM_HEIGHT = 50;
 export const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: '#00000066',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
   },
-  safeView: {
-    flex: 1,
-    backgroundColor: '#00000066',
-    justifyContent: 'flex-end',
-    paddingBottom: 20,
-  },
-
-  // Light theme (default)
-  modal: {
-    backgroundColor: colors.WHITE,
-    borderRadius: 20,
-    paddingTop: 10,
-    width: '95%',
-    alignSelf: 'center',
-  },
-
-  // Dark theme modal
-  modalDark: {
-    backgroundColor: colors.BLACK, // iOS dark background
-  },
-
-  pickerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    height: ITEM_HEIGHT * 5,
-  },
-  picker: {
-    height: 170,
+  safeArea: {
     width: '100%',
   },
-  wheel: {
-    alignItems: 'center',
-    width: 100,
-  },
-  wheelItem: {
-    height: ITEM_HEIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
+  safeAreaDark: {
+    backgroundColor: 'transparent',
   },
 
-  // Light theme text
-  wheelText: {
-    fontSize: 20,
-    color: colors.BLACK,
+  /* Bottom sheet */
+  sheet: {
+    width: '100%',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    overflow: 'hidden',
+  },
+  sheetLight: {
+    backgroundColor: colors.WHITE,
+  },
+  sheetDark: {
+    backgroundColor: '#000', // iOS dark
   },
 
-  // Dark theme text
-  wheelTextDark: {
+  /* Header (Cancel / Play) */
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerLight: {
+    borderBottomColor: '#E5E5EA',
+    backgroundColor: colors.WHITE,
+  },
+  headerDark: {
+    borderBottomColor: '#1C1C1E',
+    backgroundColor: '#000',
+  },
+  headerAction: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  actionLight: {
+    color: '#007AFF',
+  },
+  actionDark: {
+    color: '#FFFFFF',
+  },
+  headerActionPrimary: {},
+  actionPrimaryLight: {
+    color: '#007AFF',
+  },
+  actionPrimaryDark: {
     color: '#FFFFFF',
   },
 
-  selectedText: {
-    fontSize: 24,
-    fontWeight: '500',
-    color: '#000',
+  /* Picker wheel */
+  pickerContainer: {
+    height: ITEM_HEIGHT * 5, // 5 linhas visíveis, como no iOS
+    justifyContent: 'center',
   },
-
-  // Light theme confirm button
-  confirmButtonStyle: {
+  picker: {
+    height: ITEM_HEIGHT * 5,
     width: '100%',
-    alignItems: 'center',
-    paddingVertical: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
   },
-
-  // Dark theme confirm button
-  confirmButtonDark: {
-    backgroundColor: colors.BLACK, // Keep same as modal background
+  pickerItemText: {
+    fontSize: 20,
   },
-
-  // Light theme cancel button
-  buttonStyle: {
-    width: '95%',
-    alignSelf: 'center',
-    backgroundColor: colors.WHITE,
-    paddingVertical: 20,
-    marginVertical: 7,
-    borderRadius: 15,
-    alignItems: 'center',
+  pickerItemTextLight: {
+    color: colors.BLACK,
   },
-
-  // Dark theme cancel button
-  buttonStyleDark: {
-    backgroundColor: colors.BLACK, // iOS dark background
-  },
-
-  // Light theme text
-  confirmText: {
-    fontSize: 18,
-    color: '#007AFF',
-  },
-
-  // Dark theme confirm text (same blue works well in both themes)
-  confirmTextDark: {
-    color: '#0A84FF', // iOS dark mode blue
-  },
-
-  cancelText: {
-    fontSize: 18,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-
-  // Dark theme cancel text
-  cancelTextDark: {
-    color: '#0A84FF', // iOS dark mode blue
+  pickerItemTextDark: {
+    color: '#FFFFFF',
   },
 });

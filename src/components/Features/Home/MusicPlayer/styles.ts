@@ -4,18 +4,34 @@ import colors from '../../../../assets/colors';
 import { heightToDP, widthToDP } from 'react-native-responsive-screens';
 
 export const styles = StyleSheet.create({
-  buttonView: {
+  footerRow: {
     width: widthToDP('85%'),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     alignSelf: 'center',
+    marginTop: widthToDP(2),
+  },
+  exerciseInfo: {
+    flex: 1,
+  },
+  exerciseTitle: {
+    color: colors.WHITE,
+    fontWeight: '600',
+    fontSize: widthToDP(4),
+  },
+  exerciseMeta: {
+    color: colors.WHITE,
+    fontSize: widthToDP(4),
+    marginTop: 2,
   },
   timerButton: {
-    marginTop: widthToDP(-1.5),
     height: heightToDP(4.2),
     width: heightToDP(4.2),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.WHITE_50,
     borderRadius: 100,
-    alignSelf: 'flex-end',
+    marginLeft: widthToDP(4),
   },
 });

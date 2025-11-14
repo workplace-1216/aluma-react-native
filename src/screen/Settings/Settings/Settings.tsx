@@ -22,27 +22,30 @@ const settingsOptions = [
   {
     title: 'Account Information',
     onPress: () => navigate(routes.ACCOUNT_INFO),
-    sectionFinish: true,
   },
   {
     title: 'Notifications',
     onPress: () => navigate(routes.NOTIFICATIONS),
+    sectionFinish: true,
   },
   {
     title: 'Voice Guides',
     onPress: () => navigate(routes.VOICE_GUIDES),
   },
   {
-    title: 'Invite Friends',
-    onPress: () => navigate(routes.INVITE_FRIENDS),
+    title: 'Saved Frequencies',
+    onPress: () => navigate(routes.FREQUENCIES),
+  },{
+    title: 'Saved Videos',
+    onPress: () => navigate(routes.SAVED_VIDEOS),
     sectionFinish: true,
   },
   {
-    title: 'Downloads',
-    onPress: () => {
-      showToast('Coming Soon...', 'info');
-    },
+    title: 'Invite Friends',
+    onPress: () => navigate(routes.INVITE_FRIENDS),
+    
   },
+
   {
     title: 'Terms & Conditions',
     onPress: () => navigate(routes.TERMS_CONDITION),

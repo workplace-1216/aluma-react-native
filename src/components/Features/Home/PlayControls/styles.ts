@@ -1,19 +1,23 @@
 import { StyleSheet } from 'react-native';
 import colors from '../../../../assets/colors';
-import { widthToDP } from 'react-native-responsive-screens';
+import { heightToDP, widthToDP } from 'react-native-responsive-screens';
 
 export const styles = StyleSheet.create({
   playButtonView: {
     paddingHorizontal: widthToDP(8),
     width: '100%',
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignSelf: 'center',
     alignItems: 'center',
   },
   sideArea: {
-    width: widthToDP(24),
-    alignItems: 'flex-end',
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerArea: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   buttonPlay: {
     height: widthToDP(23),
@@ -22,5 +26,9 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.WHITE_50,
     borderRadius: 100,
+  },
+  iconPlaceholder: {
+    height: heightToDP('3.004%'),
+    width: widthToDP('6.744%'),
   },
 });

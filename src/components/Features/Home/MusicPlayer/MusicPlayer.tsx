@@ -1,29 +1,24 @@
 // components/Features/Home/MusicPlayer/MusicPlayer.tsx
 import React from 'react';
-import {View, TouchableOpacity} from 'react-native';
+import {View, TouchableOpacity, Text} from 'react-native';
 import MusicWheel from '../../../UI/MusicWheel';
 import {SvgTimer} from '../../../../assets/svg';
 import {heightToDP, widthToDP} from 'react-native-responsive-screens';
 import {styles} from './styles';
-import {BreathworkExercise, TutorResponse, VoiceGuide} from '../../../../utils/types';
+import {BreathworkExercise} from '../../../../utils/types';
 import {FREQUENCY} from '../../../../redux/slice/moodSlice';
-
-// ✅ GuidedVoice direto aqui
-import GuidedVoiceSelectionModal from '../../../Modals/GuidedVoiceSelectionModal/GuidedVoiceSelectionModal';
+import GuestVideoPromptModal from '../../../UI/GuestVideoPromptModal/GuestVideoPromptModal';
 
 type Props = {
   exercise?: BreathworkExercise;
-  isModalVisible: boolean;                 // não usamos pra abrir nada aqui
-  setIsModalVisible: (value: boolean) => void;
   setIsTimerModalVisible: (value: boolean) => void;
   currentFrequency: FREQUENCY;
   onSelectSound: (index: number) => void;
   playQuadrant: (url: string) => void;
-
-  // ✅ novos: dados do GuidedVoice
-  tutors: TutorResponse[];
-  exerciseId?: string;
-  onStartGuide: (guide: VoiceGuide | null) => void;
+  isGuestUser: boolean;
+  onGuestCtaPress: () => void;
+  onStartLastGuide: () => void;
+  hasLastVoiceGuide: boolean;
 };
 
 const MusicPlayer: React.FC<Props> = ({
@@ -32,20 +27,28 @@ const MusicPlayer: React.FC<Props> = ({
   currentFrequency,
   onSelectSound,
   playQuadrant,
-  tutors,
-  exerciseId,
-  onStartGuide,
+  isGuestUser,
+  onGuestCtaPress,
+  onStartLastGuide,
+  hasLastVoiceGuide,
 }) => {
-  // ✅ estado local: abrir/fechar SOMENTE o GuidedVoice
-  const [voiceOpen, setVoiceOpen] = React.useState(false);
+  const [promptVisible, setPromptVisible] = React.useState(false);
 
-  // ✅ pausar animações do wheel apenas enquanto GuidedVoice aberto
-  const pauseWheel = voiceOpen;
+  const pauseWheel = promptVisible;
+
+  const handlePrimaryAction = React.useCallback(() => {
+    setPromptVisible(false);
+    if (isGuestUser) {
+      onGuestCtaPress();
+      return;
+    }
+    onStartLastGuide();
+  }, [isGuestUser, onGuestCtaPress, onStartLastGuide]);
 
   return (
     <View>
       <MusicWheel
-        wheelOnLongPress={() => setVoiceOpen(true)}  // abre GuidedVoice
+        wheelOnLongPress={() => setPromptVisible(true)}  // abre GuidedVoice prompt
         breathWorkData={exercise}
         isModalVisible={pauseWheel}                  // pausa animações
         currentFrequency={currentFrequency}
@@ -53,24 +56,28 @@ const MusicPlayer: React.FC<Props> = ({
         playQuadrant={playQuadrant}
       />
 
-      {/* ✅ GuidedVoice diretamente aqui */}
-      {voiceOpen && (
-  <GuidedVoiceSelectionModal
-    title="Voice guides"
-    isVoiceSettingVisible={true} // sempre true porque só renderiza aberto
-    setIsVoiceSettingVisible={(v) => {
-      if (!v) {setVoiceOpen(false);}
-    }}
-    tutors={tutors}
-    currentExerciseId={exerciseId}
-    onStartGuide={(guide) => {
-      onStartGuide(guide);   // Home fará setExercise(...)
-      setVoiceOpen(false);   // desmonta o sheet -> nada fica interceptando toques
-    }}
-  />
-)}
-
-      <View style={styles.buttonView}>
+      {promptVisible && (
+        <GuestVideoPromptModal
+          visible={promptVisible}
+          onClose={() => setPromptVisible(false)}
+          isGuest={isGuestUser}
+          onSignUpPress={isGuestUser ? handlePrimaryAction : undefined}
+          onStartPress={!isGuestUser && hasLastVoiceGuide ? handlePrimaryAction : undefined}
+        />
+      )}
+      <View style={styles.footerRow}>
+        {exercise ? (
+          <View style={styles.exerciseInfo}>
+            <Text style={styles.exerciseTitle}>{exercise.title}</Text>
+            {exercise.steps?.length ? (
+              <Text style={styles.exerciseMeta}>
+                {exercise.steps.filter(num => num > 0).join(' : ')}
+              </Text>
+            ) : null}
+          </View>
+        ) : (
+          <View style={styles.exerciseInfo} />
+        )}
         <TouchableOpacity
           style={styles.timerButton}
           onPress={() => setIsTimerModalVisible(true)}>

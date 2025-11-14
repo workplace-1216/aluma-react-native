@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {View, TouchableOpacity} from 'react-native';
 import {styles} from './styles';
 import CurvedText from '../CurvedText/CurvedText';
@@ -41,6 +41,8 @@ const MusicWheel: React.FC<CircularSoundSelectorProps> = ({
   const scale = useSharedValue(0);
   const outerScale = useSharedValue(0);
   const opacity = useSharedValue(0.6);
+  const centerPulseScale = useSharedValue(1);
+  const centerPulseOpacity = useSharedValue(0);
 
   const quadrants: QUADRANTS[] =
     currentFrequency?.moodWheelItems?.[0]?.quadrants || [];
@@ -110,6 +112,28 @@ const MusicWheel: React.FC<CircularSoundSelectorProps> = ({
     opacity: opacity.value,
   }));
 
+  const centerPulseStyle = useAnimatedStyle(() => ({
+    transform: [{scale: centerPulseScale.value}],
+    opacity: centerPulseOpacity.value,
+  }));
+
+  const handleCenterLongPress = useCallback(() => {
+    centerPulseScale.value = 1;
+    centerPulseOpacity.value = 0.5;
+
+    centerPulseScale.value = withSequence(
+      withTiming(1.2, {duration: 160}),
+      withTiming(1, {duration: 220}),
+    );
+
+    centerPulseOpacity.value = withSequence(
+      withTiming(0.5, {duration: 0}),
+      withTiming(0, {duration: 380}),
+    );
+
+    wheelOnLongPress();
+  }, [centerPulseOpacity, centerPulseScale, wheelOnLongPress]);
+
   const renderItem = ({item, index}: {item: QUADRANTS; index: number}) => (
     <TouchableOpacity
       key={item?._id ?? index}
@@ -149,9 +173,14 @@ const MusicWheel: React.FC<CircularSoundSelectorProps> = ({
 
                 <View style={styles.absolute}>
                   <TouchableOpacity
-                    onLongPress={wheelOnLongPress}
+                    onLongPress={handleCenterLongPress}
                     style={styles.centerButton}
-                  />
+                    activeOpacity={0.9}>
+                    <Animated.View
+                      pointerEvents="none"
+                      style={[styles.centerPulse, centerPulseStyle]}
+                    />
+                  </TouchableOpacity>
                 </View>
 
                 {!isModalVisible && (

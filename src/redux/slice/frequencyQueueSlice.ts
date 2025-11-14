@@ -68,8 +68,8 @@ const frequencyQueueSlice = createSlice({
     },
     // New actions for All-in-One listening
     startAllInOneSession: (state, action: PayloadAction<{ frequencies: FREQUENCY[], durationPerFrequency: number }>) => {
-      state.queue = action.payload.frequencies;
-      state.currentIndex = 0;
+      state.queue = [...action.payload.frequencies]; // FIX: copy incoming list to discard any previous references
+      state.currentIndex = 0; // FIX: ensure new session always starts from first frequency
       state.isAllInOneMode = true;
       state.frequencyDuration = action.payload.durationPerFrequency;
       state.moodWheelItemCurrentIndex = 0;

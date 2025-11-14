@@ -20,6 +20,7 @@ import frequencyQueueSlice from './slice/frequencyQueueSlice';
 import volumeSlice from './slice/volumeSlice';
 import savedFrequenciesSlice from './slice/savedFrequenciesSlice';
 import subscriptionSlice from './slice/subscriptionSlice';
+import savedVideosSlice from './slice/savedVideosSlice';
 
 const reducers = combineReducers({
   auth: authSlice,
@@ -33,6 +34,7 @@ const reducers = combineReducers({
   frequencyQueue: frequencyQueueSlice,
   volume: volumeSlice,
   savedFrequencies: savedFrequenciesSlice,
+  savedVideos: savedVideosSlice,
   subscription: subscriptionSlice,
 });
 
@@ -85,6 +87,7 @@ const persistConfig = {
     'auth',
     'user',
     'savedFrequencies',
+    'savedVideos',
     'nightMode',
     'subscription',
     'frequencyQueue',

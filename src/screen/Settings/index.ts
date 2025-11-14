@@ -6,6 +6,8 @@ import InviteFriends from './InviteFriends';
 import MindfulReminder from './MindfulReminder';
 import Notifications from './Notifications';
 import Privacy from './Privacy';
+import SavedAudios from './SavedAudios';
+import SavedVideos from './SavedVideos';
 import SetPassword from './SetPassword';
 import Settings from './Settings';
 import Subscriptions from './Subscriptions';
@@ -21,6 +23,8 @@ export {
   MindfulReminder,
   Notifications,
   Privacy,
+  SavedAudios,
+  SavedVideos,
   SetPassword,
   Settings,
   Subscriptions,

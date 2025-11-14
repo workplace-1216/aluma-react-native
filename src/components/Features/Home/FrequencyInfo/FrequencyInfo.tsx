@@ -45,7 +45,7 @@ const handleShare = async () => {
     const subject = `${frequencyInfo.frequency_value}Hz - ${frequencyInfo.title}`;
 
     // Texto curto para a maioria dos apps
-    const intro = `Estou curtindo esta frequência: ${subject}`;
+    const intro = `I'm enjoying this frequency: ${subject}`;
     const details = frequencyInfo.detailed_information?.trim() ?? '';
     const snippet =
       details.length > 180 ? details.slice(0, 177).trimEnd() + '…' : details;

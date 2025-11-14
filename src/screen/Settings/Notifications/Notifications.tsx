@@ -13,6 +13,8 @@ import {SettingsOptionDivider} from '../../../components/UI/SettingsOptionDivide
 import {HeaderWithBack} from '../../../components/UI/HeaderWithBack';
 import {SettingsOptionItem} from '../../../components/UI/SettingsOptionItem';
 import {widthToDP} from 'react-native-responsive-screens';
+import {getFcmToken} from '../../../utils/getFcmToken';
+import {attachFcmToken} from '../../../service/auth/guestLogin';
 
 type LoadingToggle = 'allowNotifications' | 'dailyQouteNotification' | null;
 
@@ -56,6 +58,16 @@ const Notifications: React.FC = () => {
 
       if (key === 'allowNotifications') {
         setAllowNotifications(updatedUser.allowNotifications);
+        if (value) {
+          try {
+            const token = await getFcmToken();
+            if (token && token !== 'dummyToken') {
+              await attachFcmToken(token);
+            }
+          } catch (attachError) {
+            console.warn('Failed to attach FCM token', attachError);
+          }
+        }
       } else {
         setDailyQuote(updatedUser.dailyQouteNotification);
       }

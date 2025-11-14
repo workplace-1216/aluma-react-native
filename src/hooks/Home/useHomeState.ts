@@ -6,6 +6,8 @@ import useToggle from '../General/useToggle';
 import {getAllGlobalData} from '../../service/global/getGlobalData';
 import {userSessions} from '../../service/users/getUserSessions';
 import {setUser} from '../../redux/slice/userSlice';
+import {setSavedVideos} from '../../redux/slice/savedVideosSlice';
+import {getSavedVideos} from '../../service/video/getSavedVideos';
 import {useDispatch} from 'react-redux';
 
 export interface GlobalFeatures {
@@ -121,6 +123,52 @@ export const useHomeState = () => {
     fetchUserSessions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadSavedVideos = async () => {
+      if (!user?._id) {
+        dispatch(setSavedVideos([]));
+        return;
+      }
+
+      try {
+        const response = await getSavedVideos();
+        const rawList = Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(response)
+          ? response
+          : [];
+
+        if (!mounted) {return;}
+
+        const mapped = rawList.map((item: any) => ({
+          id: item?.id || item?.video_id || item?.url,
+          savedId: item?.savedId || item?._id,
+          url: item?.url,
+          title: item?.title,
+          subtitle: item?.subtitle,
+          frequencyId: item?.frequencyId || item?.frequency_id,
+          frequencyTitle: item?.frequencyTitle || item?.frequency_title,
+          background: item?.background || item?.thumbnail,
+          savedAt: item?.savedAt
+            ? new Date(item.savedAt).getTime()
+            : Date.now(),
+        }));
+
+        dispatch(setSavedVideos(mapped));
+      } catch (error) {
+        console.error('Failed to load saved videos:', error);
+      }
+    };
+
+    loadSavedVideos();
+
+    return () => {
+      mounted = false;
+    };
+  }, [dispatch, user?._id]);
 
   useEffect(() => {
     const planFromBackend = user?.subscription?.plan ?? 'free';

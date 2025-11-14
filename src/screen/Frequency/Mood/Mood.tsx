@@ -31,6 +31,7 @@ import CountDownPickerModal from '../../../components/Modals/CountDownPickerModa
 import {HeaderWithBack} from '../../../components/UI/HeaderWithBack';
 import BackgroundWrapper from '../../../components/UI/BackgroundWrapper';
 import Svg, { Circle as SvgCircle } from 'react-native-svg';
+import {audioController} from '../../../services/audio/AudioController'; // FIX: needed to pause current audio before all-in-one
 
 // ───────────────────────────────────────────────────────────────────────────────
 // DottedCircle (otimizado)
@@ -160,6 +161,9 @@ const Mood: React.FC = () => {
         return;
       }
       const durationPerFrequency = minutes * 60 + seconds;
+      audioController.pauseAll(); // FIX: ensure any active player stops before starting all-in-one
+      dispatch(clearFrequencyQueue()); // FIX: reset queue so all-in-one starts from a clean state
+      dispatch(resetCurrentIndex()); // FIX: guarantee new session begins at the first frequency
       dispatch(
         startAllInOneSession({
           frequencies: list,

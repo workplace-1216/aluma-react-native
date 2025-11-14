@@ -6,8 +6,8 @@ import {styles} from './styles';
 import {FREQUENCY} from '../../../../redux/slice/moodSlice';
 
 type Props = {
-  currentFrequency: FREQUENCY;
-  onInfoPress: (frequency: FREQUENCY) => void;
+  currentFrequency?: FREQUENCY;
+  onInfoPress: (frequency?: FREQUENCY) => void;
   onVoiceSettingPress: () => void;
 };
 

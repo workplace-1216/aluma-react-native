@@ -1,13 +1,16 @@
 import {Dimensions, StyleSheet} from 'react-native';
 import colors from '../../../assets/colors';
 import responsiveUtils from '../../../utils/responsiveUtils';
+import {isSmallAppleScreen} from '../../../utils/isSmallAppleScreen';
+
 const {width} = Dimensions.get('window');
-const circleSize = width * 0.85;
+const circleSize = width * (isSmallAppleScreen ? 0.9 : 0.80);
+
 export const styles = StyleSheet.create({
   container: {
-    width: circleSize * 0.77,
-    height: circleSize * 0.77,
-    borderRadius: circleSize * 0.8,
+    width: circleSize,
+    height: circleSize,
+    borderRadius: circleSize / 2,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
@@ -15,9 +18,9 @@ export const styles = StyleSheet.create({
     borderColor: colors.WHITE,
   },
   circle: {
-    width: 110,
-    height: 110,
-    borderRadius: 75,
+    width: circleSize * 0.5,
+    height: circleSize * 0.5,
+    borderRadius: circleSize * 0.25,
     backgroundColor: colors.WHITE_80,
     position: 'absolute',
   },

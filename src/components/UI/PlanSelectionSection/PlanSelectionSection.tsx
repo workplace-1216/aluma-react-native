@@ -1,10 +1,22 @@
 // src/components/subscription/PlanSelectionSection.tsx
-import React from 'react';
-import { Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  Text,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+  Modal,
+  Pressable,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import WebView from 'react-native-webview';
 import colors from '../../../assets/colors';
 import { styles } from './styles';
-import responsiveUtils from '../../../utils/responsiveUtils';
-import { widthToDP } from 'react-native-responsive-screens';
+import { webURL } from '../../../constants/constants';
+import { useAppSelector } from '../../../redux/store';
+import { navigate } from '../../../navigation/AppNavigator';
+import routes from '../../../constants/routes';
+import GuestAuthModal from '../GuestAuthModal/GuestAuthModal';
 
 type SubscriptionPlan = 'monthly' | 'yearly';
 
@@ -23,6 +35,9 @@ interface PlanSelectionSectionProps {
   globalFeatures: string[];
   disabled?: boolean;
   loading?: boolean;
+  onRestore?: () => void; // opcional: restore purchases
+  onGuestPromptOpen?: () => void;
+  useInternalGuestModal?: boolean;
 }
 
 const PlanSelectionSection = ({
@@ -33,7 +48,44 @@ const PlanSelectionSection = ({
   globalFeatures,
   disabled = false,
   loading = false,
+  onRestore,
+  onGuestPromptOpen,
+  useInternalGuestModal = true,
 }: PlanSelectionSectionProps) => {
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [guestModalVisible, setGuestModalVisible] = useState(false);
+  const user = useAppSelector(state => state.user);
+
+  const isGuestUser = useMemo(
+    () => user?.provider === 'guest' || user?.isAnonymous,
+    [user.provider, user.isAnonymous, user._id],
+  );
+
+  const handlePrimaryCta = () => {
+    if (disabled || loading) {
+      return;
+    }
+
+    if (isGuestUser) {
+      if (useInternalGuestModal) {
+        setGuestModalVisible(true);
+      } else {
+        onGuestPromptOpen?.();
+      }
+      return;
+    }
+
+    onSubscribe();
+  };
+
+  const handleGuestNavigate = (route: string) => {
+    setGuestModalVisible(false);
+    navigate(route);
+  };
+
+  const closeGuestModal = () => setGuestModalVisible(false);
+
   const renderPlanCard = (plan: PlanCard) => {
     const isSelected = selectedPlan === plan.id;
 
@@ -81,7 +133,9 @@ const PlanSelectionSection = ({
               <Text
                 style={[
                   styles.featureText,
-                  isSelected ? styles.selectedFeatureText : styles.unselectedFeatureText,
+                  isSelected
+                    ? styles.selectedFeatureText
+                    : styles.unselectedFeatureText,
                 ]}
               >
                 {feature}
@@ -100,7 +154,7 @@ const PlanSelectionSection = ({
       <View style={styles.globalFeatures}>
         {globalFeatures.map((feature, index) => (
           <View key={index} style={styles.globalFeatureRow}>
-            <Text
+            {/* <Text
               style={[
                 styles.globalFeatureText,
                 {
@@ -110,7 +164,7 @@ const PlanSelectionSection = ({
               ]}
             >
               √
-            </Text>
+            </Text> */}
             <Text style={styles.globalFeatureText}>{feature}</Text>
           </View>
         ))}
@@ -118,15 +172,82 @@ const PlanSelectionSection = ({
 
       <TouchableOpacity
         style={[styles.subscribeButton, (disabled || loading) && { opacity: 0.6 }]}
-        onPress={onSubscribe}
+        onPress={handlePrimaryCta}
         disabled={disabled || loading}
       >
         {loading ? (
           <ActivityIndicator />
         ) : (
-          <Text style={styles.subscribeButtonText}>Continue</Text>
+          <Text style={styles.subscribeButtonText}>
+            {isGuestUser ? '7 Days Free Trial' : 'Continue'}
+          </Text>
         )}
       </TouchableOpacity>
+      {/* Legal footer abaixo do Continue */}
+      <View style={{ marginTop: 8, paddingHorizontal: 12 }}>
+        <Text style={{ textAlign: 'center', opacity: 0.8, lineHeight: 20,color: 'white' }}>
+
+          <Text
+            style={{ textDecorationLine: 'underline' }}
+            onPress={() => setShowTerms(true)}
+          >
+            Terms of Use (EULA)
+          </Text>{' '}
+          and{' '}
+          <Text
+            style={{ textDecorationLine: 'underline' }}
+            onPress={() => setShowPrivacy(true)}
+          >
+            Privacy Policy
+          </Text>
+          .
+        </Text>
+
+      </View>
+
+      {/* Modais legais (WebView) */}
+      <Modal
+        visible={showPrivacy}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowPrivacy(false)}
+      >
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+            <Pressable onPress={() => setShowPrivacy(false)}>
+              <Text style={{ fontWeight: '600' }}>{'‹ Back'}</Text>
+            </Pressable>
+          </View>
+          <WebView source={{ uri: `${webURL}privacy` }} style={{ flex: 1 }} />
+        </SafeAreaView>
+      </Modal>
+
+      <Modal
+        visible={showTerms}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowTerms(false)}
+      >
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+            <Pressable onPress={() => setShowTerms(false)}>
+              <Text style={{ fontWeight: '600' }}>{'‹ Back'}</Text>
+            </Pressable>
+          </View>
+          {/* Se preferir usar o EULA padrão da Apple, troque a URL abaixo por:
+             'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/' */}
+          <WebView source={{ uri: `${webURL}terms` }} style={{ flex: 1 }} />
+        </SafeAreaView>
+      </Modal>
+
+      {useInternalGuestModal ? (
+        <GuestAuthModal
+          visible={guestModalVisible}
+          onClose={closeGuestModal}
+          onSignUpPress={() => handleGuestNavigate(routes.SIGN_UP)}
+          onLoginPress={() => handleGuestNavigate(routes.SIGN_IN)}
+        />
+      ) : null}
     </View>
   );
 };

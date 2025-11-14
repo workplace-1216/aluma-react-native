@@ -19,8 +19,9 @@ export const styles = StyleSheet.create({
 
   // Abas (tutores)
   tabRow: {
+    alignItems: 'center',
     gap: 3,
-    width: '100%',
+    paddingHorizontal: 16,
   },
   tabChip: {
     width: 127,
@@ -28,6 +29,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    
   },
   tabChipSelected: {
     backgroundColor: '#d9d9d9bf',

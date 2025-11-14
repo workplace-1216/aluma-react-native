@@ -27,22 +27,26 @@ const PlayControls: React.FC<Props> = ({
 }) => (
   <View style={styles.playButtonView}>
     <View style={styles.sideArea}>
-      {exercise && (
+      {exercise ? (
         <TouchableOpacity onPress={onExerciseBack}>
           <SvgBack height={heightToDP('3.004%')} width={widthToDP('6.744%')} />
         </TouchableOpacity>
+      ) : (
+        <View style={styles.iconPlaceholder} />
       )}
     </View>
-    {isPlaying ? (
-      <TouchableOpacity onPress={onPause} style={styles.buttonPlay}>
-        <SvgPause />
-      </TouchableOpacity>
-    ) : (
-      <TouchableOpacity onPress={onPlay} style={styles.buttonPlay}>
-        <SvgPlay />
-      </TouchableOpacity>
-    )}
-    <View style={[styles.sideArea]}>
+    <View style={styles.centerArea}>
+      {isPlaying ? (
+        <TouchableOpacity onPress={onPause} style={styles.buttonPlay}>
+          <SvgPause />
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity onPress={onPlay} style={styles.buttonPlay}>
+          <SvgPlay />
+        </TouchableOpacity>
+      )}
+    </View>
+    <View style={styles.sideArea}>
       <MoonToggle initialState={night} onToggle={onToggleNight} />
     </View>
   </View>

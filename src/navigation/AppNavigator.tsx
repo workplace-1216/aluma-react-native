@@ -24,6 +24,9 @@ import {
 // Core Home
 import {Home} from '../screen/Core';
 
+// Player
+import {FullScreenVideo} from '../screen/Player';
+
 // Frequency
 import {Frequencies, AllFrequencies, Mood} from '../screen/Frequency';
 
@@ -38,6 +41,8 @@ import {
   Notifications,
   Privacy,
   SetPassword,
+  SavedAudios,
+  SavedVideos,
   Settings,
   Subscriptions,
   Terms,
@@ -58,6 +63,7 @@ const authScreens = [
 ];
 
 const homeScreens = [{name: routes.HOME, component: Home}];
+const playerScreens = [{name: routes.FULLSCREEN_VIDEO, component: FullScreenVideo}];
 
 const frequencyScreens = [
   {name: routes.FREQUENCIES, component: Frequencies},
@@ -76,6 +82,8 @@ const settingsScreens = [
   {name: routes.BEDTIME_REMINDER, component: BedtimeReminder},
   {name: routes.INVITE_FRIENDS, component: InviteFriends},
   {name: routes.VOICE_GUIDES, component: VoiceGuides},
+  {name: routes.SAVED_AUDIOS, component: SavedAudios},
+  {name: routes.SAVED_VIDEOS, component: SavedVideos},
   {name: routes.ABOUT, component: About},
   {name: routes.PRIVACY_SECURITY, component: Privacy},
   {name: routes.TERMS_CONDITION, component: Terms},
@@ -177,6 +185,7 @@ function AppNavigator() {
         <Stack.Screen name={routes.SPLASH_SCREEN} component={SplashScreen} />
         {renderScreens(authScreens)}
         {renderScreens(homeScreens)}
+        {renderScreens(playerScreens)}
         {renderScreens(frequencyScreens)}
         {renderScreens(settingsScreens)}
       </Stack.Navigator>

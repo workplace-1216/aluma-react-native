@@ -31,6 +31,7 @@ import {
   setSavedFrequencies,
 } from '../../../redux/slice/savedFrequenciesSlice';
 import { styles } from './styles';
+import {audioController} from '../../../services/audio/AudioController'; // FIX: pause active audio before starting all-in-one
 
 /** TTL local para evitar refetch desnecessário */
 const TTL_6H = 6 * 60 * 60 * 1000;
@@ -117,6 +118,9 @@ const Frequencies = () => {
         return;
       }
       const durationPerFrequency = minutes * 60 + seconds;
+      audioController.pauseAll(); // FIX: stop any current playback before starting all-in-one
+      dispatch(clearFrequencyQueue()); // FIX: clear existing queue to avoid mixing sessions
+      dispatch(resetCurrentIndex()); // FIX: reset pointer so the new session starts from the first item
       dispatch(
         startAllInOneSession({
           frequencies: savedFrequencies,

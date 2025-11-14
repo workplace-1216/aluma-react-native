@@ -1,4 +1,4 @@
-// styles.ts (arquivo completo)
+// styles.ts
 import {StyleSheet} from 'react-native';
 import {heightToDP, widthToDP} from 'react-native-responsive-screens';
 import colors from '../../../assets/colors';
@@ -7,6 +7,10 @@ import responsiveUtils from '../../../utils/responsiveUtils';
 const CHEVRON_SIZE = 7.3;
 const CHEVRON_RATIO = 2.369;
 
+// === Ajustes para posicionar a imagem do card sem cortar o que você quer mostrar ===
+const CARD_H = 100;      // mesma altura do frame do card
+const THUMB_SHIFT = 24;  // ajuste de deslocamento vertical do recorte (px). Aumente/diminua conforme necessário.
+
 export const styles = StyleSheet.create({
   container: { flex: 1, height: '100%' },
   safeView: { flex: 1 },
@@ -14,12 +18,15 @@ export const styles = StyleSheet.create({
   headerView: {
     width: widthToDP('85%'),
     alignSelf: 'center',
-    marginBottom: heightToDP('1%'),
+    marginBottom: heightToDP('8%'),
   },
   menuButton: {
     alignSelf: 'flex-start',
     paddingVertical: widthToDP('4%'),
     paddingRight: widthToDP('7.5%'),
+  },
+  volume:{
+    marginBottom: heightToDP('2%'),
   },
 
   buttonView: {
@@ -41,7 +48,6 @@ export const styles = StyleSheet.create({
     marginTop: heightToDP('2%'),
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 15,
   },
   playButtonView: {
     width: widthToDP('85%'),
@@ -86,7 +92,12 @@ export const styles = StyleSheet.create({
   // Modal
   modalContainer: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)' },
   modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  modalContentFullScreen: { flex: 1, marginTop: 0, backgroundColor: 'blue' },
+  modalContentFullScreen: {
+    flex: 1,
+    marginTop: 0,
+    position: 'relative',
+    backgroundColor: 'transparent',
+  },
 
   // Conteúdo principal
   tipsView: { alignSelf: 'center', flex: 1, width: '100%', alignItems: 'center' },
@@ -95,21 +106,39 @@ export const styles = StyleSheet.create({
   videoList: {
     width: '100%',
     alignItems: 'center',
-    gap: 12,
     marginTop: 0,
   },
-  videoCard: { width: '90%' },
+  videoCard: { width: 340, marginBottom: 12 },
+  videoCardLast: { marginBottom: 0 },
   videoFrame: {
-    height: 180,
+    height: CARD_H,      // era 118, agora usa a constante
     borderRadius: 37,
     overflow: 'hidden',
     position: 'relative',
   },
-  video: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+  // Ajuste para permitir reposicionar o conteúdo verticalmente sem cortar o que você quer:
+  // - Aumentamos a altura da imagem (CARD_H + THUMB_SHIFT*2) para ter "sobra".
+  // - Usamos top: -THUMB_SHIFT para mostrar um pouco mais a parte de baixo da imagem.
+  //   Se quiser mostrar mais a parte de cima, troque para top: +THUMB_SHIFT.
+  video: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    width: '100%',
+    height: CARD_H + THUMB_SHIFT * 4,
+    top: -THUMB_SHIFT,
+  },
   videoOverlay: {
     position: 'absolute',
     left: 0, right: 0, top: 0, bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+  },
+  favoriteButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    padding: 8,
+    borderRadius: 18,
+    zIndex: 2,
   },
   // Subtítulo em cima (16)
   videoSubtitle: {
@@ -118,7 +147,7 @@ export const styles = StyleSheet.create({
     left: 22,
     right: 22,
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
@@ -140,8 +169,7 @@ export const styles = StyleSheet.create({
   tipScroll: { maxHeight: 190, backgroundColor: 'rgba(0, 0, 0, 0.5)' },
   tipScrollContent: { padding: 12 },
   tipText: { color: '#FFF', fontSize: 14, lineHeight: 20, opacity: 0.9 },
-
-  // ---------- Player expandido ----------
+  // ---------- Player expandido (mantidos p/ compat, não usados com overlay) ----------
   videoExpandedContainer: { width: '100%', alignItems: 'center' },
   videoExpandedFrame: {
     width: '90%',
@@ -150,7 +178,6 @@ export const styles = StyleSheet.create({
     borderRadius: 18,
     overflow: 'hidden',
   },
-  videoExpanded: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
   videoToolbar: {
     width: '90%',
     alignSelf: 'center',
@@ -158,7 +185,6 @@ export const styles = StyleSheet.create({
     marginBottom: 80,
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,
   },
   returnButton: {
     padding: 10,

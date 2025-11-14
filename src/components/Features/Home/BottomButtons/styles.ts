@@ -7,7 +7,6 @@ export const styles = StyleSheet.create({
     marginTop: heightToDP('2%'),
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 15,
   },
   Button: {
     height: widthToDP(9.3),
@@ -16,5 +15,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.WHITE_50,
     borderRadius: 100,
+    marginHorizontal: widthToDP('2%'),
   },
 });

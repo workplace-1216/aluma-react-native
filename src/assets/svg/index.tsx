@@ -110,6 +110,29 @@ function SvgGoogle(props: SvgProps) {
     </Svg>
   );
 }
+
+function SvgHeart({
+  size = 24,
+  color = '#FFFFFF',
+  filled = false,
+}: {
+  size?: number;
+  color?: string;
+  filled?: boolean;
+}) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M20.84 4.61a5.5 5.5 0 00-7.78-.08L12 5.6l-1.06-1.07a5.5 5.5 0 00-7.78.08 5.61 5.61 0 00.08 7.86l7.19 7.11a1 1 0 001.42 0l7.19-7.11a5.61 5.61 0 00.08-7.86z"
+        fill={filled ? color : 'none'}
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
 function SvgHeadphones({width = 38, height = 38, ...props}: SvgProps) {
   return (
     <Svg
@@ -652,6 +675,7 @@ export {
   SvgPause,
   SvgPlay,
   SvgGoogle,
+  SvgHeart,
   SvgCircleArrow,
   SvgHeadphones,
   SvgChevronRight,

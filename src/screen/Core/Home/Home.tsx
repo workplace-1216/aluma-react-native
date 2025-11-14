@@ -29,7 +29,7 @@ import {useQuadrantAudioPlayer} from '../../../hooks/FrequencyPlayerHook/useQuad
 import {useBaseAudioPlayer} from '../../../hooks/FrequencyPlayerHook/useBaseAudioPlayer.ts';
 import BottomHomeModal from '../BottomHome/BottomHomeModal.tsx';
 import VolumeSlider from '../../../components/UI/VolumeSlider/VolumeSlider.tsx';
-import { VoiceGuide, BreathworkExercise } from '../../../utils/types';
+import {VoiceGuide, BreathworkExercise} from '../../../utils/types';
 import {selectCurrentFrequency} from '../../../redux/selectors/frequency';
 import {audioController} from '../../../services/audio/AudioController';
 
@@ -113,6 +113,14 @@ const {
   });
 
   const displayFrequency = useAppSelector(selectCurrentFrequency);
+  const [guestVideoPromptVisible, setGuestVideoPromptVisible] = React.useState(false);
+  const [lastVoiceGuide, setLastVoiceGuide] = React.useState<VoiceGuide | null>(null);
+  const isGuestUser =
+    !user ||
+    user?.provider === 'guest' ||
+    user?.isAnonymous ||
+    user?.authType === 'guest' ||
+    user?.subscription?.plan === 'guest';
 
   useFocusEffect(
     React.useCallback(() => {
@@ -151,32 +159,61 @@ const {
     handleNavigationFrequency,
   );
 
-  const handleStartGuide = React.useCallback((guide: VoiceGuide | null) => {
-  if (!guide) {
-    // "No voice" → mantenha o MusicWheel
-    return;
-  }
+  const handleStartGuide = React.useCallback(
+    (guide: VoiceGuide | null) => {
+      if (isGuestUser) {
+        setGuestVideoPromptVisible(true);
+        return;
+      }
 
-  // 1) Se o backend já populou o exercício no guide:
-  const exPopulado = (guide.exercise_id as unknown) as BreathworkExercise | undefined;
-  if (exPopulado?.steps?.length) {
-    setExercise(exPopulado);   // MusicWheel detecta steps -> renderiza BreathCircle
-    return;
-  }
+      if (!guide) {
+        setLastVoiceGuide(null);
+        // "No voice" → mantenha o MusicWheel
+        return;
+      }
 
-  // 2) Se veio só o _id, procure no cache/local (breathExercise)
-  const exId = (guide as any)?.exercise_id?._id || (guide as any)?.exercise_id;
-  if (exId && Array.isArray(breathExercise)) {
-    const found = breathExercise.find(e => String(e._id) === String(exId));
-    if (found?.steps?.length) {
-      setExercise(found);
+      setLastVoiceGuide(guide);
+
+      // 1) Se o backend já populou o exercício no guide:
+      const exPopulado = (guide.exercise_id as unknown) as BreathworkExercise | undefined;
+      if (exPopulado?.steps?.length) {
+        setExercise(exPopulado); // MusicWheel detecta steps -> renderiza BreathCircle
+        return;
+      }
+
+      // 2) Se veio só o _id, procure no cache/local (breathExercise)
+      const exId = (guide as any)?.exercise_id?._id || (guide as any)?.exercise_id;
+      if (exId && Array.isArray(breathExercise)) {
+        const found = breathExercise.find(e => String(e._id) === String(exId));
+        if (found?.steps?.length) {
+          setExercise(found);
+          return;
+        }
+      }
+
+      // 3) fallback: (opcional) buscar do servidor ou manter wheel
+      // setExercise(undefined);
+    },
+    [
+      isGuestUser,
+      setGuestVideoPromptVisible,
+      setLastVoiceGuide,
+      setExercise,
+      breathExercise,
+    ],
+  );
+
+  const handleStartLastGuide = React.useCallback(() => {
+    if (!lastVoiceGuide) {
       return;
     }
-  }
 
-  // 3) fallback: (opcional) buscar do servidor ou manter wheel
-  // setExercise(undefined);
-}, [breathExercise, setExercise]);
+    handleStartGuide(lastVoiceGuide);
+  }, [handleStartGuide, lastVoiceGuide]);
+
+  const handleGuestCtaPress = React.useCallback(() => {
+    navigate(routes.SIGN_UP);
+  }, []);
 
   useEffect(() => {
     if (!user?.subscription) {return;}
@@ -262,6 +299,8 @@ const {
         pauseMusic={pauseMusic}
         setVolume={setVolume}
         currentFrequency={displayFrequency}
+        onVoiceGuidePress={toggleVoiceSettings}
+        onSharePress={onSelectFrequencyInfo}
       />
     </>
   );
@@ -291,17 +330,14 @@ const {
                   // No JSX onde você renderiza o <MusicPlayer />:
                   <MusicPlayer
                     exercise={exercise}
-                    isModalVisible={isModalVisible}
-                    setIsModalVisible={toggleModalVisible}
                     setIsTimerModalVisible={toggleTimerModal}
                     currentFrequency={displayFrequency}
                     onSelectSound={setMoodWheelItemIndex}
                     playQuadrant={playQuadrant}
-
-                    // ✅ novos
-                    tutors={tutors}
-                    exerciseId={exercise?._id}
-                    onStartGuide={handleStartGuide}
+                    isGuestUser={isGuestUser}
+                    onGuestCtaPress={handleGuestCtaPress}
+                    onStartLastGuide={handleStartLastGuide}
+                    hasLastVoiceGuide={Boolean(lastVoiceGuide)}
                   />
                 )}
                 {isSmallAppleScreen ? (

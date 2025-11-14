@@ -8,6 +8,7 @@ import Animated, {
 import {styles} from './styles';
 import {BreathworkExercise, VoiceGuide} from '../../../utils/types';
 import voiceGuideSound from '../../../hooks/TutorSoundHook';
+import {isSmallAppleScreen} from '../../../utils/isSmallAppleScreen';
 
 interface BreathingCircleProps {
   breathWorkData: BreathworkExercise;
@@ -15,9 +16,9 @@ interface BreathingCircleProps {
   tutorVoiceGuide: VoiceGuide | undefined;
 }
 const {width} = Dimensions.get('window');
-const circleSize = width * 0.85;
-const minCircleSize = 110; // Small size (exhale)
-const maxCircleSize = circleSize * 0.7;
+const circleSize = width * (isSmallAppleScreen ? 0.9 : 0.80);
+const minCircleSize = circleSize * 0.55;
+const maxCircleSize = circleSize;
 
 const BreathingCircle: React.FC<BreathingCircleProps> = ({
   durations = [4, 4, 4, 4],

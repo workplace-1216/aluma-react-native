@@ -7,7 +7,7 @@ import KeyboardContainer from '../../../components/layout/KeyboardContainer';
 import CustomTextInput from '../../../components/UI/CustomTextInput';
 import routes from '../../../constants/routes';
 import {register} from '../../../service/auth/register';
-import {useAppDispatch} from '../../../redux/store';
+import {useAppDispatch, useAppSelector} from '../../../redux/store';
 import {setToken} from '../../../redux/slice/authSlice';
 import {setUser} from '../../../redux/slice/userSlice';
 import {RouteProp, useRoute} from '@react-navigation/native';
@@ -19,6 +19,8 @@ import {fetchAllExercises} from '../../../service/exercise/getAllExercise';
 import {fetchAllGuidedVoice} from '../../../service/guide/gettAllGuideVoice';
 import {fetchNightMode} from '../../../service/nightMode/getNightMode';
 import {fetchFirstMoodWithFrequency} from '../../../service/mood/getFirstMood';
+import {convertGuestToEmail} from '../../../service/auth/convertGuest';
+import {setPurposeAPI} from '../../../service/auth/setPurpose';
 
 type SignUpEmailRouteParams = {
   SignUpEmail: {
@@ -37,6 +39,9 @@ const SignUpEmail: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(state => state.user);
+  const isGuestUser =
+    currentUser?.provider === 'guest' || currentUser?.isAnonymous;
 
   const handleSignUp = async () => {
     setErrorMessage('');
@@ -67,15 +72,20 @@ const SignUpEmail: React.FC = () => {
       setLoading(true);
       const fcmToken = await getFcmToken();
 
-      const response = await register({
-        email,
-        purpose,
-        password,
-        firstName: name.split(' ').length > 0 ? name.split(' ')[0] : name,
-        lastName: name.split(' ').length > 0 ? name.split(' ')[1] : '',
-        signUpType: 'manual',
-        fcmToken,
-      });
+      let response: any;
+      if (isGuestUser) {
+        response = await convertGuestToEmail(email, password);
+      } else {
+        response = await register({
+          email,
+          purpose,
+          password,
+          firstName: name.split(' ').length > 0 ? name.split(' ')[0] : name,
+          lastName: name.split(' ').length > 0 ? name.split(' ')[1] : '',
+          signUpType: 'manual',
+          fcmToken,
+        });
+      }
 
       const user = response?.user;
       const token = response?.tokens?.access;
@@ -87,6 +97,14 @@ const SignUpEmail: React.FC = () => {
         dispatch(fetchNightMode());
         dispatch(fetchFirstMoodWithFrequency());
       }
+      if (isGuestUser && purpose && user?.email) {
+        try {
+          await setPurposeAPI({email: user.email, purpose});
+        } catch (purposeError) {
+          console.warn('Failed to set purpose for guest conversion', purposeError);
+        }
+      }
+
       dispatch(setToken(token));
       dispatch(setUser(user));
 

@@ -1,12 +1,16 @@
 import React from 'react';
-import {View, Text} from 'react-native';
+import {View, Text, Image, TouchableOpacity} from 'react-native';
 import {styles} from './styles';
 import {useAppSelector} from '../../../redux/store';
+import hambuguer from "../../../assets/images/hambugersave.png";
+import {navigate} from '../../../navigation/AppNavigator';
+import routes from '../../../constants/routes';
 interface StatsBarProps {
   bottomLeftCornerQuote: string;
+  onSavedPress?: () => void;
 }
 
-const StatsBar: React.FC<StatsBarProps> = ({bottomLeftCornerQuote}) => {
+const StatsBar: React.FC<StatsBarProps> = ({bottomLeftCornerQuote, onSavedPress}) => {
   const user = useAppSelector(state => state.user);
 
   const formatPlayingTime = (seconds: number = 0) => {
@@ -38,12 +42,24 @@ const StatsBar: React.FC<StatsBarProps> = ({bottomLeftCornerQuote}) => {
 
       {/* Right Section: Total Sessions */}
       <View style={[styles.sectionRight]}>
-        <View style={styles.contentCenter}>
-          <Text style={styles.number}>{user?.sessions?.count}</Text>
-          <Text style={styles.label}>
-            {user?.sessions?.count === 1 ? 'SESSION' : 'SESSIONS'}
-          </Text>
-        </View>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.contentCenter}
+          onPress={() => {
+            if (onSavedPress) {
+              onSavedPress();
+            } else {
+              navigate(routes.SAVED_VIDEOS);
+            }
+          }}
+        >
+          <Image
+            source={hambuguer}
+            style={{ width: 28, height: 28 }}
+            resizeMode="contain"
+          />
+          <Text style={styles.label}>SAVED</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
