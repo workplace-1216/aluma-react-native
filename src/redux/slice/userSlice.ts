@@ -20,6 +20,7 @@ export interface UserState {
   purpose: string;
   provider?: string;
   isAnonymous?: boolean;
+  guestDeviceId?: string;
   googleAccount?: boolean;
   allowNotifications?: boolean;
   dailyQouteNotification?: boolean;
@@ -40,6 +41,7 @@ const initialState: UserState = {
   purpose: '',
   provider: '',
   isAnonymous: false,
+  guestDeviceId: undefined,
   googleAccount: false,
   allowNotifications: false,
   dailyQouteNotification: false,

@@ -86,10 +86,11 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
   const night = useAppSelector(state => state.nightMode.isNightMode);
   const savedVideos = useAppSelector(state => state.savedVideos.savedVideos);
   const user = useAppSelector(state => state.user);
-  const isGuestUser = useMemo(
-    () => user?.provider === 'guest' || user?.isAnonymous,
-    [user?._id, user?.isAnonymous, user?.provider],
-  );
+  // const isGuestUser = useMemo(
+  //   () => user?.provider === 'guest' || user?.isAnonymous,
+  //   [user?._id, user?.isAnonymous, user?.provider],
+  // );
+  const isGuestUser = false;
 
   const handleNavigation = () => {
     onClose();
@@ -131,10 +132,12 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
   //    usar videos[]
   // =========================
   const videos: VideoEntry[] = useMemo(() => {
-    const raw = (currentFrequency as any)?.videos;
-    if (!Array.isArray(raw)) {return [];}
+    const raw = globalFeatures?.weekly_tip_videos;
+    if (!Array.isArray(raw)) {
+      return [];
+    }
     return raw.filter(v => isVideoUrl(v?.url));
-  }, [currentFrequency]);
+  }, [globalFeatures?.weekly_tip_videos]);
 
   const poster = useMemo(
     () => currentFrequency?.background_image || currentFrequency?.photo_url,
@@ -151,10 +154,10 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
 
   const toggleFavorite = useCallback(
     async (id: string, video: VideoEntry) => {
-      if (isGuestUser) {
-        setGuestAuthModalVisible(true);
-        return;
-      }
+      // if (isGuestUser) {
+      //   setGuestAuthModalVisible(true);
+      //   return;
+      // }
 
       if (!video?.url || pendingVideoId) {return;}
 
@@ -177,7 +180,7 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
                 : { id: existing.id },
             ),
           );
-          showToast('Vídeo removido dos favoritos.', 'info');
+          showToast('Video removed from favorites.', 'info');
         } else {
           if (!user?._id) {
             showToast('Faça login para salvar vídeos.', 'info');
@@ -253,10 +256,10 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
     (video: VideoEntry, cardPoster?: string) => {
       if (!video?.url) {return;}
 
-      if (isGuestUser) {
-        setGuestVideoModalVisible(true);
-        return;
-      }
+      // if (isGuestUser) {
+      //   setGuestVideoModalVisible(true);
+      //   return;
+      // }
 
       pauseMusic();
       setIsPlayingState(false);
@@ -292,20 +295,20 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
     }, 200);
   }, [currentFrequency, onClose, onSharePress]);
 
-  const closeGuestVideoModal = () => setGuestVideoModalVisible(false);
+  // const closeGuestVideoModal = () => setGuestVideoModalVisible(false);
 
-  const handleGuestPromptCta = () => {
-    setGuestVideoModalVisible(false);
-    setGuestAuthModalVisible(true);
-  };
+  // const handleGuestPromptCta = () => {
+  //   setGuestVideoModalVisible(false);
+  //   setGuestAuthModalVisible(true);
+  // };
 
-  const closeGuestAuthModal = () => setGuestAuthModalVisible(false);
+  // const closeGuestAuthModal = () => setGuestAuthModalVisible(false);
 
-  const handleGuestAuthNavigate = (route: string) => {
-    setGuestAuthModalVisible(false);
-    setPendingGuestRoute(route);
-    onClose();
-  };
+  // const handleGuestAuthNavigate = (route: string) => {
+  //   setGuestAuthModalVisible(false);
+  //   setPendingGuestRoute(route);
+  //   onClose();
+  // };
 
   useEffect(() => {
     if (!isVisible) {
@@ -486,7 +489,7 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
               </SafeAreaView>
             </BackgroundWrapper>
           </View>
-          <GuestVideoPromptModal
+          {/* <GuestVideoPromptModal
             visible={guestVideoModalVisible}
             onClose={closeGuestVideoModal}
             onSignUpPress={handleGuestPromptCta}
@@ -496,7 +499,7 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
             onClose={closeGuestAuthModal}
             onSignUpPress={() => handleGuestAuthNavigate(routes.SIGN_UP)}
             onLoginPress={() => handleGuestAuthNavigate(routes.SIGN_IN)}
-          />
+          /> */}
         </View>
       </GestureDetector>
     </Modal>

@@ -10,10 +10,20 @@ import {setSavedVideos} from '../../redux/slice/savedVideosSlice';
 import {getSavedVideos} from '../../service/video/getSavedVideos';
 import {useDispatch} from 'react-redux';
 
+export interface WeeklyTipVideo {
+  _id?: string;
+  title?: string;
+  subtitle?: string;
+  url?: string;
+  cover_url?: string;
+  thumbnail?: string;
+}
+
 export interface GlobalFeatures {
   weekly_tip: string;
   ujjayi_breathe: string;
   bottom_left_corner_quote: string;
+  weekly_tip_videos?: WeeklyTipVideo[];
 }
 
 const GLOBAL_FEATURES_TTL = 10 * 60 * 1000;
@@ -79,11 +89,19 @@ export const useHomeState = () => {
 
       cachedGlobalFeatures = {data, timestamp: now};
       setGlobalFeatures(prev => {
+        if (!prev) {
+          return data;
+        }
+
+        const videosSame =
+          JSON.stringify(prev.weekly_tip_videos ?? []) ===
+          JSON.stringify(data.weekly_tip_videos ?? []);
+
         if (
-          prev &&
           prev.weekly_tip === data.weekly_tip &&
           prev.ujjayi_breathe === data.ujjayi_breathe &&
-          prev.bottom_left_corner_quote === data.bottom_left_corner_quote
+          prev.bottom_left_corner_quote === data.bottom_left_corner_quote &&
+          videosSame
         ) {
           return prev;
         }

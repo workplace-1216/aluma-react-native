@@ -21,7 +21,7 @@ import {webURL} from '../../../constants/constants';
 import {useAppDispatch} from '../../../redux/store';
 import {setToken} from '../../../redux/slice/authSlice';
 import {setUser} from '../../../redux/slice/userSlice';
-import {guestLogin} from '../../../service/auth/guestLogin';
+import {guestLogin, restoreGuestSession} from '../../../service/auth/guestLogin';
 import createPersistentDeviceId from '../../../utils/createPersistentDeviceId';
 import {getFcmToken} from '../../../utils/getFcmToken';
 import {fetchAllExercises} from '../../../service/exercise/getAllExercise';
@@ -29,6 +29,10 @@ import {fetchAllGuidedVoice} from '../../../service/guide/gettAllGuideVoice';
 import {fetchAllGuidedVoiceSettings} from '../../../service/tutors/getAllTutors';
 import {fetchNightMode} from '../../../service/nightMode/getNightMode';
 import {fetchFirstMoodWithFrequency} from '../../../service/mood/getFirstMood';
+import {
+  getStoredGuestDeviceId,
+  persistGuestDeviceId,
+} from '../../../utils/guestDeviceStorage';
 
 // Reusable modal with WebView for legal pages
 const LegalWebModal = ({
@@ -63,6 +67,7 @@ const Connect = () => {
   const [showTerms, setShowTerms] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState(false);
 
   const navigateLogin = () => navigate(routes.SIGN_IN);
   const navigateSignUp = () => navigate(routes.SIGN_UP);
@@ -77,18 +82,13 @@ const Connect = () => {
     dispatch(fetchFirstMoodWithFrequency());
   }, [dispatch]);
 
-  const handleGuestLogin = useCallback(async () => {
-    if (!accepted) {
-      Alert.alert(
-        'Terms required',
-        'Please accept the Terms of Use and Privacy Policy to continue.',
-      );
-      return;
-    }
+  const loginGuestSession = useCallback(
+    async (overrideGuestId?: string | null) => {
+      const [storedGuestDeviceId, deviceId] = await Promise.all([
+        overrideGuestId ? Promise.resolve(overrideGuestId) : getStoredGuestDeviceId(),
+        createPersistentDeviceId(),
+      ]);
 
-    try {
-      setGuestLoading(true);
-      const deviceId = await createPersistentDeviceId();
       let fcmToken: string | undefined;
       try {
         const token = await getFcmToken();
@@ -100,6 +100,7 @@ const Connect = () => {
       }
 
       const response = await guestLogin({
+        guestDeviceId: storedGuestDeviceId ?? undefined,
         deviceId,
         fcmToken,
       });
@@ -111,10 +112,30 @@ const Connect = () => {
         throw new Error('Guest login failed');
       }
 
+      if (user?.guestDeviceId) {
+        await persistGuestDeviceId(user.guestDeviceId);
+      }
+
       dispatch(setToken(token));
       dispatch(setUser(user));
       bootstrapAfterAuth();
       reset(routes.HOME);
+    },
+    [bootstrapAfterAuth, dispatch],
+  );
+
+  const handleGuestLogin = useCallback(async () => {
+    if (!accepted) {
+      Alert.alert(
+        'Terms required',
+        'Please accept the Terms of Use and Privacy Policy to continue.',
+      );
+      return;
+    }
+
+    try {
+      setGuestLoading(true);
+      await loginGuestSession();
     } catch (error: any) {
       console.error('Guest login error:', error);
       Alert.alert(
@@ -124,7 +145,62 @@ const Connect = () => {
     } finally {
       setGuestLoading(false);
     }
-  }, [accepted, bootstrapAfterAuth, dispatch]);
+  }, [accepted, loginGuestSession]);
+
+  const handleGuestRestore = useCallback(async () => {
+    if (!accepted) {
+      Alert.alert(
+        'Terms required',
+        'Please accept the Terms of Use and Privacy Policy to continue.',
+      );
+      return;
+    }
+
+    try {
+      setRestoreLoading(true);
+      const guestDeviceId = await getStoredGuestDeviceId();
+      if (!guestDeviceId) {
+        Alert.alert(
+          'No guest session found',
+          'We could not find any previous guest session on this device. Try exploring without signing up first.',
+        );
+        return;
+      }
+
+      const restoreResponse = await restoreGuestSession({guestDeviceId});
+
+      if (!restoreResponse?.exists || !restoreResponse.user) {
+        Alert.alert(
+          'No purchases found',
+          'We could not find any active subscription for this guest device.',
+        );
+        return;
+      }
+
+      const plan =
+        restoreResponse.user?.subscription?.plan &&
+        restoreResponse.user.subscription.plan !== 'free'
+          ? restoreResponse.user.subscription.plan
+          : null;
+
+      Alert.alert(
+        plan ? 'Subscription found' : 'Guest profile found',
+        plan
+          ? 'We found your previous subscription. Signing you back in...'
+          : 'We found your guest profile. Continuing as guest.',
+      );
+
+      await loginGuestSession(guestDeviceId);
+    } catch (error: any) {
+      console.error('Guest restore error:', error);
+      Alert.alert(
+        'Unable to restore guest purchases',
+        error?.data?.message || error?.message || 'Please try again.',
+      );
+    } finally {
+      setRestoreLoading(false);
+    }
+  }, [accepted, loginGuestSession]);
 
   return (
     <Container>
@@ -266,6 +342,37 @@ const Connect = () => {
     )}
   </View>
 </Pressable>
+
+          <Pressable
+            onPress={handleGuestRestore}
+            disabled={!accepted || guestLoading || restoreLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Restore guest purchases"
+            hitSlop={8}
+            style={({pressed}) => [
+              {
+                flexDirection: 'row',
+                alignItems: 'center',
+                alignSelf: 'center',
+                marginTop: 12,
+                opacity:
+                  !accepted || guestLoading || restoreLoading ? 0.6 : 1,
+              },
+              pressed && {opacity: 0.7},
+            ]}>
+            {restoreLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text
+                style={{
+                  color: '#fff',
+                  fontWeight: '600',
+                  textDecorationLine: 'underline',
+                }}>
+                Restore purchases
+              </Text>
+            )}
+          </Pressable>
 
           {/* (Optional) small helper text */}
           {!accepted && (

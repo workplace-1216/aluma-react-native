@@ -60,7 +60,8 @@ const MusicPlayer: React.FC<Props> = ({
         <GuestVideoPromptModal
           visible={promptVisible}
           onClose={() => setPromptVisible(false)}
-          isGuest={isGuestUser}
+          // isGuest={isGuestUser}
+          isGuest={false}
           onSignUpPress={isGuestUser ? handlePrimaryAction : undefined}
           onStartPress={!isGuestUser && hasLastVoiceGuide ? handlePrimaryAction : undefined}
         />

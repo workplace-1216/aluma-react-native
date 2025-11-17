@@ -1,5 +1,5 @@
 // src/components/subscription/PlanSelectionSection.tsx
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Text,
   TouchableOpacity,
@@ -13,10 +13,6 @@ import WebView from 'react-native-webview';
 import colors from '../../../assets/colors';
 import { styles } from './styles';
 import { webURL } from '../../../constants/constants';
-import { useAppSelector } from '../../../redux/store';
-import { navigate } from '../../../navigation/AppNavigator';
-import routes from '../../../constants/routes';
-import GuestAuthModal from '../GuestAuthModal/GuestAuthModal';
 
 type SubscriptionPlan = 'monthly' | 'yearly';
 
@@ -35,9 +31,6 @@ interface PlanSelectionSectionProps {
   globalFeatures: string[];
   disabled?: boolean;
   loading?: boolean;
-  onRestore?: () => void; // opcional: restore purchases
-  onGuestPromptOpen?: () => void;
-  useInternalGuestModal?: boolean;
 }
 
 const PlanSelectionSection = ({
@@ -48,43 +41,17 @@ const PlanSelectionSection = ({
   globalFeatures,
   disabled = false,
   loading = false,
-  onRestore,
-  onGuestPromptOpen,
-  useInternalGuestModal = true,
 }: PlanSelectionSectionProps) => {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  const [guestModalVisible, setGuestModalVisible] = useState(false);
-  const user = useAppSelector(state => state.user);
-
-  const isGuestUser = useMemo(
-    () => user?.provider === 'guest' || user?.isAnonymous,
-    [user.provider, user.isAnonymous, user._id],
-  );
 
   const handlePrimaryCta = () => {
     if (disabled || loading) {
       return;
     }
 
-    if (isGuestUser) {
-      if (useInternalGuestModal) {
-        setGuestModalVisible(true);
-      } else {
-        onGuestPromptOpen?.();
-      }
-      return;
-    }
-
     onSubscribe();
   };
-
-  const handleGuestNavigate = (route: string) => {
-    setGuestModalVisible(false);
-    navigate(route);
-  };
-
-  const closeGuestModal = () => setGuestModalVisible(false);
 
   const renderPlanCard = (plan: PlanCard) => {
     const isSelected = selectedPlan === plan.id;
@@ -178,9 +145,7 @@ const PlanSelectionSection = ({
         {loading ? (
           <ActivityIndicator />
         ) : (
-          <Text style={styles.subscribeButtonText}>
-            {isGuestUser ? '7 Days Free Trial' : 'Continue'}
-          </Text>
+          <Text style={styles.subscribeButtonText}>Continue</Text>
         )}
       </TouchableOpacity>
       {/* Legal footer abaixo do Continue */}
@@ -239,15 +204,6 @@ const PlanSelectionSection = ({
           <WebView source={{ uri: `${webURL}terms` }} style={{ flex: 1 }} />
         </SafeAreaView>
       </Modal>
-
-      {useInternalGuestModal ? (
-        <GuestAuthModal
-          visible={guestModalVisible}
-          onClose={closeGuestModal}
-          onSignUpPress={() => handleGuestNavigate(routes.SIGN_UP)}
-          onLoginPress={() => handleGuestNavigate(routes.SIGN_IN)}
-        />
-      ) : null}
     </View>
   );
 };
