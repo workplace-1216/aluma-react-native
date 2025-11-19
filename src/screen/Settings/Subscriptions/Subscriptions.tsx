@@ -102,6 +102,7 @@ const Subscriptions = () => {
 
         dispatch(setFromRC({isPremium: true, plan, expiry: expiryISO ?? undefined}));
 
+        // Update user subscription if user is registered (optional)
         if (user?._id) {
           const updatedSubscription: {plan: 'monthly' | 'free' | 'annual'; expiry: string} = {
             plan: normalizedPlan,
@@ -120,6 +121,11 @@ const Subscriptions = () => {
           } catch (updateErr) {
             console.warn('[Subscriptions] Failed to persist subscription update', updateErr);
           }
+        } else {
+          // User purchased without registration - show optional registration message
+          showToast('Subscription activated! 🎉 Register to access on all your devices.', 'success');
+          goBack();
+          return;
         }
 
         showToast('Subscription activated! 🎉', 'success');
@@ -171,6 +177,7 @@ const Subscriptions = () => {
           expiry: expiryISO ?? undefined,
         }));
 
+        // Update user subscription if user is registered (optional)
         if (user?._id) {
           const updatedSubscription: {plan: 'monthly' | 'free' | 'annual'; expiry: string} = {
             plan: normalizedPlan,
@@ -189,6 +196,11 @@ const Subscriptions = () => {
           } catch (updateErr) {
             console.warn('[Subscriptions] Failed to persist subscription update', updateErr);
           }
+        } else {
+          // User restored without registration - show optional registration message
+          showToast('Purchases restored! 🎉 Register to access on all your devices.', 'success');
+          goBack();
+          return;
         }
 
         showToast('Purchases restored successfully! 🎉', 'success');
@@ -227,6 +239,11 @@ const Subscriptions = () => {
             <Text style={styles.titleText}>
               Select your Aluma Breath subscription plan
             </Text>
+            {!user?._id && (
+              <Text style={[styles.titleText, {fontSize: 14, marginTop: 8, opacity: 0.8, fontWeight: '400'}]}>
+                You can purchase without registering. Registration is optional and enables access to your subscription on all your devices.
+              </Text>
+            )}
           </View>
 
           <PlanSelectionSection

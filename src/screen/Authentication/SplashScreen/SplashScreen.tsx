@@ -73,7 +73,9 @@ const SplashScreen = () => {
     }
 
     const timer = setTimeout(() => {
-      reset(token ? routes.HOME : routes.CONNECT);
+      // Allow anonymous access - users can purchase without registration
+      // Registration is optional and only needed for cross-device access
+      reset(token ? routes.HOME : routes.HOME);
     }, 1200); // abre mais rápido
 
     return () => clearTimeout(timer);

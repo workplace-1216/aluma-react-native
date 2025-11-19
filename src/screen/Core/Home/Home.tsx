@@ -32,6 +32,9 @@ import VolumeSlider from '../../../components/UI/VolumeSlider/VolumeSlider.tsx';
 import {VoiceGuide, BreathworkExercise} from '../../../utils/types';
 import {selectCurrentFrequency} from '../../../redux/selectors/frequency';
 import {audioController} from '../../../services/audio/AudioController';
+import {checkSubscriptionStatus} from '../../../service/billing/revenuecat';
+import {setFromRC} from '../../../redux/slice/subscriptionSlice';
+import {RC_ENABLED} from '../../../utils/env';
 
 const Home: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -215,6 +218,24 @@ const {
     navigate(routes.SIGN_UP);
   }, []);
 
+  // Check subscription status on mount (works for both registered and anonymous users)
+  useEffect(() => {
+    (async () => {
+      // For anonymous users, check RevenueCat directly
+      if (!user?._id && RC_ENABLED) {
+        try {
+          const status = await checkSubscriptionStatus();
+          if (status) {
+            dispatch(setFromRC(status));
+            console.log('[Home] Subscription status checked for anonymous user:', status);
+          }
+        } catch (error) {
+          console.warn('[Home] Failed to check subscription status:', error);
+        }
+      }
+    })();
+  }, [user?._id, dispatch]);
+
   useEffect(() => {
     if (!user?.subscription) {return;}
 
@@ -286,7 +307,7 @@ const {
         selectedPlan={selectedPlan}
         setSelectedPlan={setSelectedPlan}
         handleSubscribe={handleSubscriptionContinue}
-        disableClose={new Date(user.subscription?.expiry ?? 0) <= new Date()}
+        disableClose={user?.subscription?.expiry ? new Date(user.subscription.expiry) <= new Date() : false}
       />
       <BottomHomeModal
         globalFeatures={globalFeatures}

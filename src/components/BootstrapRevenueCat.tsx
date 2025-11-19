@@ -12,6 +12,7 @@ import {
 import { ensureIapConnection } from '../service/billing/iap';
 import { setFromRC } from '../redux/slice/subscriptionSlice';
 import { RC_ENABLED } from '../utils/env';
+import { ENTITLEMENT_ID } from '../constants/billing';
 
 const BootstrapRevenueCat: React.FC = () => {
   const userId = useAppSelector(s => s.user?._id);
@@ -50,13 +51,40 @@ const BootstrapRevenueCat: React.FC = () => {
 
       if (!RC_ENABLED) {return;}
       const info = await getCustomerInfoSafe();
+      const premium = isPremium(info);
+      
+      // Extract plan and expiry from RevenueCat for anonymous users
+      let plan: 'monthly' | 'yearly' | undefined;
+      let expiry: string | undefined;
+      
+      if (premium && info) {
+        const entitlement = info.entitlements.active[ENTITLEMENT_ID];
+        if (entitlement) {
+          expiry = entitlement.expirationDate ?? undefined;
+          // Determine plan from product identifier
+          const productId = entitlement.productIdentifier || '';
+          if (productId.includes('yearly') || productId.includes('annual')) {
+            plan = 'yearly';
+          } else if (productId.includes('monthly')) {
+            plan = 'monthly';
+          }
+        }
+      }
+      
       dispatch(
         setFromRC({
-          isPremium: isPremium(info),
-          plan: undefined,
-          expiry: undefined,
+          isPremium: premium,
+          plan,
+          expiry,
         })
       );
+      
+      console.log('[BootstrapRC] Subscription status checked:', {
+        isPremium: premium,
+        plan,
+        expiry,
+        hasUser: !!userId,
+      });
     })();
   }, [userId, dispatch]);
 

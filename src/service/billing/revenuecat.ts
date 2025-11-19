@@ -430,6 +430,54 @@ export function isPremium(info?: CustomerInfo | null) {
   return !!ent;
 }
 
+/** 
+ * Check and return current subscription status from RevenueCat.
+ * Works for both registered and anonymous users.
+ * Returns null if RevenueCat is not enabled or not configured.
+ */
+export async function checkSubscriptionStatus(): Promise<{
+  isPremium: boolean;
+  plan?: 'monthly' | 'yearly';
+  expiry?: string;
+} | null> {
+  if (!RC_ENABLED || !configured) {
+    return null;
+  }
+
+  try {
+    const info = await getCustomerInfoSafe();
+    const premium = isPremium(info);
+    
+    if (!premium || !info) {
+      return { isPremium: false };
+    }
+
+    const entitlement = info.entitlements.active[ENTITLEMENT_ID];
+    if (!entitlement) {
+      return { isPremium: false };
+    }
+
+    const expiry = entitlement.expirationDate ?? undefined;
+    const productId = entitlement.productIdentifier || '';
+    
+    let plan: 'monthly' | 'yearly' | undefined;
+    if (productId.includes('yearly') || productId.includes('annual')) {
+      plan = 'yearly';
+    } else if (productId.includes('monthly')) {
+      plan = 'monthly';
+    }
+
+    return {
+      isPremium: true,
+      plan,
+      expiry,
+    };
+  } catch (e) {
+    console.error('[RC][checkSubscriptionStatus] Error:', e);
+    return null;
+  }
+}
+
 /** Utility: get a list of packages (for showing real localized prices/titles). */
 export async function getCurrentPackages() {
   const offering = await getOfferings();

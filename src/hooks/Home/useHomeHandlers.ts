@@ -82,6 +82,7 @@ const useHomeHandlers = ({
       const rcExpiry = expiryISO ?? undefined;
       dispatch(setFromRC({ isPremium: true, plan, expiry: rcExpiry }));
 
+      // Update user subscription if user is registered (optional)
       if (user?._id) {
         const updatedSubscription = {
           plan: normalizedPlan,
@@ -100,6 +101,13 @@ const useHomeHandlers = ({
         } catch (updateErr) {
           console.warn('[billing] failed to persist subscription update', updateErr);
         }
+      } else {
+        // User purchased without registration - show optional registration prompt
+        // Registration enables cross-device access but is not required
+        showToast('Subscription activated! 🎉 Register to access on all your devices.', { type: 'success' });
+        setSubscriptionDismissed(false);
+        setIsSubscription(false);
+        return; // Early return to show success message
       }
 
       showToast('Subscription activated! 🎉', { type: 'success' });
