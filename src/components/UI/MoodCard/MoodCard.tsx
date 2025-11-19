@@ -5,6 +5,7 @@ import {styles} from './styles';
 import {navigate} from '../../../navigation/AppNavigator';
 import routes from '../../../constants/routes';
 import {MOOD} from '../../../redux/slice/moodSlice';
+import images from '../../../assets/images';
 
 // Evita re-render se prop "mood" não mudou
 type MoodCardProps = {
@@ -27,7 +28,12 @@ const MoodCardComponent: React.FC<MoodCardProps> = ({mood}) => {
         </Text>
       </View>
       <FastImage
-        source={{uri: icon_url, priority: FastImage.priority.normal}}
+        source={
+          icon_url
+            ? {uri: icon_url, priority: FastImage.priority.normal}
+            : images.mood_placeholder
+        }
+        defaultSource={images.mood_placeholder}
         style={styles.circle}
         resizeMode={FastImage.resizeMode.cover}
       />

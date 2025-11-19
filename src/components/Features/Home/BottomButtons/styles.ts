@@ -4,7 +4,8 @@ import colors from '../../../../assets/colors';
 
 export const styles = StyleSheet.create({
   bottomButtonView: {
-    marginTop: heightToDP('2%'),
+    marginTop: heightToDP('3%'),
+    marginBottom: widthToDP(3),
     flexDirection: 'row',
     justifyContent: 'center',
   },

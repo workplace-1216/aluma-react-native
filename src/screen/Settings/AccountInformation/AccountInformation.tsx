@@ -74,6 +74,20 @@ const AccountInformation: React.FC = () => {
     );
   };
 
+  const subscriptionPlanLabel = (() => {
+    const plan = user?.subscription?.plan;
+    switch (plan) {
+      case 'monthly':
+        return 'Monthly';
+      case 'annual':
+      case 'yearly':
+        return 'Annual';
+      case 'free':
+      default:
+        return 'Free';
+    }
+  })();
+
   return (
     <Container>
       <View style={styles.container}>
@@ -115,7 +129,7 @@ const AccountInformation: React.FC = () => {
           <View style={styles.section}>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Subscription Details</Text>
-              <Text style={styles.infoValue}>Annual</Text>
+              <Text style={styles.infoValue}>{subscriptionPlanLabel}</Text>
             </View>
 
             <TouchableOpacity onPress={handleEditSubscription}>

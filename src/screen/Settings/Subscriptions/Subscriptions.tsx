@@ -1,22 +1,23 @@
 import {
-  Image,
   KeyboardAvoidingView,
   Platform,
   Text,
   TouchableOpacity,
   View,
   ActivityIndicator,
+  Linking,
+  ScrollView,
 } from 'react-native';
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import Container from '../../../components/layout/Container';
 import {styles} from './styles';
 import {goBack, navigate} from '../../../navigation/AppNavigator';
-import images from '../../../assets/images';
-import PlanSelectionSection from '../../../components/UI/PlanSelectionSection';
 import {features, plans} from '../../../utils/subscriptionsData';
+import {styles as planStyles} from '../../../components/UI/PlanSelectionSection/styles';
 import {SubscriptionPlan} from '../../../utils/types';
 import {HeaderWithBack} from '../../../components/UI/HeaderWithBack';
 import {useAppSelector, useAppDispatch} from '../../../redux/store';
+import colors from '../../../assets/colors';
 import {
   purchasePlan,
   restorePurchases,
@@ -36,6 +37,36 @@ const Subscriptions = () => {
   const [isLoading, setIsLoading] = useState(false);
   const user = useAppSelector(state => state.user);
   const dispatch = useAppDispatch();
+
+  const normalizedCurrentPlan: SubscriptionPlan | 'free' = useMemo(() => {
+    const plan = user?.subscription?.plan;
+    if (!plan || plan === 'free') {
+      return 'free';
+    }
+
+    if (plan === 'annual') {
+      return 'yearly';
+    }
+
+    return 'monthly';
+  }, [user?.subscription?.plan]);
+
+  const expiryISO = user?.subscription?.expiry;
+  const expiryDate = expiryISO ? new Date(expiryISO) : null;
+  const now = new Date();
+  const hasValidExpiry =
+    !!expiryDate && !Number.isNaN(expiryDate.getTime());
+  const isPremiumActive =
+    user?.subscription?.plan !== 'free' && hasValidExpiry && expiryDate! > now;
+  const isTrialActive =
+    user?.subscription?.plan === 'free' && hasValidExpiry && expiryDate! > now;
+  const formattedExpiry = hasValidExpiry
+    ? new Intl.DateTimeFormat(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }).format(expiryDate!)
+    : undefined;
 
   const handlePlanSelect = (planId: SubscriptionPlan) => {
     setSelectedPlan(planId);
@@ -66,7 +97,9 @@ const Subscriptions = () => {
   };
 
   const handleContinue = async () => {
-    if (isLoading) return;
+    if (isLoading) {
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -141,7 +174,9 @@ const Subscriptions = () => {
   };
 
   const handleRestorePurchases = async () => {
-    if (isLoading) return;
+    if (isLoading) {
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -212,6 +247,27 @@ const Subscriptions = () => {
     navigate(routes.PRIVACY_SECURITY);
   };
 
+  const handleManageStore = () => {
+    const url =
+      Platform.OS === 'ios'
+        ? 'https://apps.apple.com/account/subscriptions'
+        : 'https://play.google.com/store/account/subscriptions';
+    Linking.openURL(url).catch(() => {
+      showToast('Unable to open the store subscriptions page.', 'error');
+    });
+  };
+
+  const statusLabel = isTrialActive
+    ? 'Free trial active'
+    : isPremiumActive
+    ? 'Subscription active'
+    : 'No subscription';
+  const statusSubtext = isTrialActive
+    ? `Your trial ends on ${formattedExpiry || 'the end of the period'}.`
+    : isPremiumActive
+    ? `Renews on ${formattedExpiry ?? 'the next billing date.'}`
+    : 'Subscribe to unlock the full Aluma Breath experience.';
+
   return (
     <Container>
       <KeyboardAvoidingView
@@ -219,23 +275,117 @@ const Subscriptions = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <HeaderWithBack title={'Subscriptions'} onBack={goBack} />
 
-        <View style={styles.content}>
-          <View style={styles.logoContainer}>
-            <Image source={images.Logo} style={styles.logo} />
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled">
+          <View style={styles.content}>
+          <View style={styles.statusCard}>
+            <Text style={styles.statusLabel}>{statusLabel}</Text>
+            <Text style={styles.statusDescription}>{statusSubtext}</Text>
+            <View style={styles.statusMetaRow}>
+              <Text style={styles.statusMetaLabel}>Current plan</Text>
+              <Text style={styles.statusMetaValue}>
+                {normalizedCurrentPlan === 'free'
+                  ? 'Free'
+                  : normalizedCurrentPlan === 'yearly'
+                  ? 'Yearly'
+                  : 'Monthly'}
+              </Text>
+            </View>
+            <View style={styles.statusMetaRow}>
+              <Text style={styles.statusMetaLabel}>
+                {isTrialActive ? 'Trial ends' : 'Renews / expires'}
+              </Text>
+              <Text style={styles.statusMetaValue}>
+                {formattedExpiry ?? '—'}
+              </Text>
+            </View>
+            <Text style={styles.statusHint}>
+              Cancel or re-activate anytime from your app store account.
+            </Text>
+            <TouchableOpacity
+              style={styles.manageButton}
+              onPress={handleManageStore}
+              disabled={isLoading}>
+              <Text style={styles.manageButtonText}>Open Store Subscription Settings</Text>
+            </TouchableOpacity>
           </View>
+
           <View style={styles.textWrapper}>
             <Text style={styles.titleText}>
-              Select your Aluma Breath subscription plan
+              Choose the plan that fits your practice
             </Text>
           </View>
 
-          <PlanSelectionSection
-            selectedPlan={selectedPlan}
-            onSelectPlan={handlePlanSelect}
-            onSubscribe={handleContinue}
-            plans={plans}
-            globalFeatures={features}
-          />
+          <View style={planStyles.cardsContainer}>
+            {plans.map(plan => {
+              const isSelected = selectedPlan === plan.id;
+              const isCurrent = normalizedCurrentPlan === plan.id;
+
+              return (
+                <TouchableOpacity
+                  key={plan.id}
+                  style={[
+                    planStyles.planCard,
+                    isSelected ? planStyles.selectedCard : planStyles.unselectedCard,
+                    isLoading && styles.planCardDisabled,
+                  ]}
+                  activeOpacity={0.9}
+                  onPress={() => handlePlanSelect(plan.id)}
+                  disabled={isLoading}>
+                  <Text
+                    style={[
+                      planStyles.planTitle,
+                      isSelected ? planStyles.selectedText : planStyles.unselectedText,
+                    ]}>
+                    {plan.title}
+                  </Text>
+                  <Text
+                    style={[
+                      planStyles.planPrice,
+                      isSelected ? planStyles.selectedText : planStyles.unselectedText,
+                    ]}>
+                    {plan.price}
+                  </Text>
+                  <View style={planStyles.featuresContainer}>
+                    {plan.features.map(feature => (
+                      <View key={`${plan.id}-${feature}`} style={planStyles.featureRow}>
+                        <View
+                          style={[
+                            planStyles.bullet,
+                            {
+                              backgroundColor: isSelected ? colors.BLACK_10 : colors.WHITE,
+                            },
+                          ]}
+                        />
+                        <Text
+                          style={[
+                            planStyles.featureText,
+                            isSelected
+                              ? planStyles.selectedFeatureText
+                              : planStyles.unselectedFeatureText,
+                          ]}>
+                          {feature}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                  {isCurrent ? (
+                    <Text style={styles.currentPlanNote}>Current plan</Text>
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <View style={planStyles.globalFeatures}>
+            {features.map(feature => (
+              <Text key={feature} style={planStyles.globalFeatureText}>
+                {feature}
+              </Text>
+            ))}
+          </View>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
@@ -269,7 +419,8 @@ const Subscriptions = () => {
               </Text>
             </View>
           </View>
-        </View>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Container>
   );

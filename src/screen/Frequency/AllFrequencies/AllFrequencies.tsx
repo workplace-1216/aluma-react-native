@@ -21,43 +21,71 @@ import {saveFrequency} from '../../../service/frequency/UserFrequencies/saveFreq
 import showToast from '../../../components/UI/CustomToast/CustomToast';
 import Container from '../../../components/layout/Container';
 import {HeaderWithBack} from '../../../components/UI/HeaderWithBack';
+import {needsRefresh} from '../../../utils/functions';
+import {useFocusEffect} from '@react-navigation/native';
 
 const AllFrequencies = () => {
   const dispatch = useAppDispatch();
   const allFrequencies = useAppSelector(
     state => state.frequency.allFrequencies,
   );
+  const frequencyLastUpdated = useAppSelector(
+    state => state.frequency.lastUpdated,
+  );
+  const hasFrequencies = allFrequencies.length > 0;
 
   const user = useAppSelector(state => state.user);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [savingId, setSavingId] = useState<string | null>(null);
 
-  const getFrequencies = async () => {
-    setIsLoading(true);
-    try {
-      const response = await getAllFrequencies();
-      dispatch(setFrequencies(response?.data));
-    } catch (error: any) {
-      console.error('Failed to fetch frequencies:', error);
-
-      showToast(
-        error?.data?.message || 'Could not load frequencies. Please try again.',
-        'error',
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const getFrequencies = useCallback(
+    async (force = false) => {
+      const shouldFetch = force || needsRefresh(frequencyLastUpdated);
+      if (!shouldFetch) {
+        return;
+      }
+      const showInline = hasFrequencies;
+      if (showInline) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
+      try {
+        const response = await getAllFrequencies();
+        dispatch(setFrequencies(response?.data));
+      } catch (error: any) {
+        console.error('Failed to fetch frequencies:', error);
+        showToast(
+          error?.data?.message ||
+            'Could not load frequencies. Please try again.',
+          'error',
+        );
+      } finally {
+        if (showInline) {
+          setIsRefreshing(false);
+        } else {
+          setIsLoading(false);
+        }
+      }
+    },
+    [dispatch, frequencyLastUpdated, hasFrequencies],
+  );
 
   const handleBack = () => {
     goBack();
   };
 
   useEffect(() => {
-    getFrequencies();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    getFrequencies(!hasFrequencies);
+  }, [getFrequencies, hasFrequencies]);
+
+  useFocusEffect(
+    useCallback(() => {
+      getFrequencies(false);
+    }, [getFrequencies]),
+  );
 
   const handleSaveFrequency = async (frequency: FREQUENCY, userId: string) => {
     try {
@@ -108,6 +136,13 @@ const AllFrequencies = () => {
         <Loader loading={isLoading} />
         <SafeAreaView style={styles.safeArea}>
           <HeaderWithBack title={'All Frequencies'} onBack={handleBack} />
+          {isRefreshing && (
+            <ActivityIndicator
+              style={{marginVertical: 12}}
+              size="small"
+              color="#fff"
+            />
+          )}
 
           <FlatList
             data={allFrequencies}

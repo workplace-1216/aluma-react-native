@@ -6,9 +6,15 @@ import useToggle from '../General/useToggle';
 import {getAllGlobalData} from '../../service/global/getGlobalData';
 import {userSessions} from '../../service/users/getUserSessions';
 import {setUser} from '../../redux/slice/userSlice';
-import {setSavedVideos} from '../../redux/slice/savedVideosSlice';
+import {clearSavedVideos, setSavedVideos} from '../../redux/slice/savedVideosSlice';
 import {getSavedVideos} from '../../service/video/getSavedVideos';
 import {useDispatch} from 'react-redux';
+import {needsRefresh} from '../../utils/functions';
+import {InteractionManager} from 'react-native';
+import {setMoods} from '../../redux/slice/moodSlice';
+import {setFrequencies} from '../../redux/slice/frequencySlice';
+import {getMoodsAll} from '../../service/mood/getMoodsAlll';
+import {getAllFrequencies} from '../../service/frequency/getAllFrequencies';
 
 export interface WeeklyTipVideo {
   _id?: string;
@@ -47,7 +53,16 @@ export const useHomeState = () => {
     state => state.frequencyQueue.currentIndex,
   );
   const user = useAppSelector(state => state.user);
+  const userId = user?._id;
   const rcIsPremium = useAppSelector(state => state.subscription.isPremium);
+  const savedVideos = useAppSelector(state => state.savedVideos.savedVideos);
+  const savedVideosLastUpdated = useAppSelector(
+    state => state.savedVideos.lastUpdated,
+  );
+  const moodsLastUpdated = useAppSelector(state => state.mood.lastUpdated);
+  const frequencyLastUpdated = useAppSelector(
+    state => state.frequency.lastUpdated,
+  );
 
   const [exercise, setExercise] = useState<BreathworkExercise>();
   const [frequencyInfo, setFrequencyInfo] = useState<FREQUENCY>();
@@ -146,8 +161,12 @@ export const useHomeState = () => {
     let mounted = true;
 
     const loadSavedVideos = async () => {
-      if (!user?._id) {
-        dispatch(setSavedVideos([]));
+      if (!userId) {
+        dispatch(clearSavedVideos());
+        return;
+      }
+
+      if (savedVideos.length > 0 && !needsRefresh(savedVideosLastUpdated)) {
         return;
       }
 
@@ -186,7 +205,34 @@ export const useHomeState = () => {
     return () => {
       mounted = false;
     };
-  }, [dispatch, user?._id]);
+  }, [dispatch, userId, savedVideos.length, savedVideosLastUpdated]);
+
+  useEffect(() => {
+    if (
+      !needsRefresh(moodsLastUpdated) &&
+      !needsRefresh(frequencyLastUpdated)
+    ) {
+      return;
+    }
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (needsRefresh(moodsLastUpdated)) {
+        getMoodsAll()
+          .then(response => dispatch(setMoods(response?.data ?? [])))
+          .catch(err => console.error('Background moods refresh failed:', err));
+      }
+      if (needsRefresh(frequencyLastUpdated)) {
+        getAllFrequencies()
+          .then(response => dispatch(setFrequencies(response?.data ?? [])))
+          .catch(err =>
+            console.error('Background frequencies refresh failed:', err),
+          );
+      }
+    });
+
+    return () => {
+      task.cancel?.();
+    };
+  }, [dispatch, moodsLastUpdated, frequencyLastUpdated]);
 
   useEffect(() => {
     const planFromBackend = user?.subscription?.plan ?? 'free';

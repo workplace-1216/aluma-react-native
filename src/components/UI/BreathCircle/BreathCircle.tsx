@@ -9,6 +9,7 @@ import {styles} from './styles';
 import {BreathworkExercise, VoiceGuide} from '../../../utils/types';
 import voiceGuideSound from '../../../hooks/TutorSoundHook';
 import {isSmallAppleScreen} from '../../../utils/isSmallAppleScreen';
+import {useAppSelector} from '../../../redux/store';
 
 interface BreathingCircleProps {
   breathWorkData: BreathworkExercise;
@@ -16,8 +17,8 @@ interface BreathingCircleProps {
   tutorVoiceGuide: VoiceGuide | undefined;
 }
 const {width} = Dimensions.get('window');
-const circleSize = width * (isSmallAppleScreen ? 0.9 : 0.80);
-const minCircleSize = circleSize * 0.55;
+const circleSize = width * (isSmallAppleScreen ? 0.9 : 0.74);
+const minCircleSize = circleSize * 0.35;
 const maxCircleSize = circleSize;
 
 const BreathingCircle: React.FC<BreathingCircleProps> = ({
@@ -25,13 +26,14 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
   breathWorkData,
   tutorVoiceGuide,
 }) => {
+  const guidedVolume = useAppSelector(state => state.volume.volume ?? 1);
   const scale = useSharedValue<number>(1);
   const animatedSize = useSharedValue<number>(minCircleSize);
   const [phaseIndex, setPhaseIndex] = useState<number>(0);
   const [countdown, setCountdown] = useState<number>(3);
   const [started, setStarted] = useState<boolean>(false);
   const {play, pause, stop, clear, isPlaying, isLoaded, error} =
-    voiceGuideSound(tutorVoiceGuide?.recording);
+    voiceGuideSound(tutorVoiceGuide?.recording, guidedVolume);
 
   const BREATHING_CYCLE = [
     {label: 'INHALE', size: maxCircleSize, duration: durations[0] * 1000},
@@ -94,7 +96,8 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.circle, animatedStyle]} />
+      <View style={styles.circle} />
+      <Animated.View style={[styles.innerCircle, animatedStyle]} />
       <View style={styles.textContainer}>
         <Text style={styles.text}>
           {countdown > 0

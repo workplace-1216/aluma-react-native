@@ -6,4 +6,5 @@ export type RenderSubscriptionBottomSheetProps = {
   selectedPlan: SubscriptionPlan;
   setSelectedPlan: (val: SubscriptionPlan) => void;
   handleSubscribe: () => void;
+  isTrialActive?: boolean;
 };

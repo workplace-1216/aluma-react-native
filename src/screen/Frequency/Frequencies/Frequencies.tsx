@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {FlatList, Text, TouchableOpacity, View} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {ActivityIndicator, FlatList, Text, TouchableOpacity, View} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SvgHeadphones, SvgPlus } from '../../../assets/svg';
 import { goBack, navigate, reset } from '../../../navigation/AppNavigator';
@@ -29,55 +28,89 @@ import { HeaderWithBack } from '../../../components/UI/HeaderWithBack';
 import {
   removeSavedFrequency,
   setSavedFrequencies,
+  clearSavedFrequencies,
 } from '../../../redux/slice/savedFrequenciesSlice';
 import { styles } from './styles';
 import {audioController} from '../../../services/audio/AudioController'; // FIX: pause active audio before starting all-in-one
-
-/** TTL local para evitar refetch desnecessário */
-const TTL_6H = 6 * 60 * 60 * 1000;
-const shouldRefresh = (lastUpdated?: number, ttl = TTL_6H) =>
-  !lastUpdated || Date.now() - lastUpdated > ttl;
+import {needsRefresh} from '../../../utils/functions';
 
 const Frequencies = () => {
   const dispatch = useAppDispatch();
   const navigation = useNavigation();
 
   const [selectedTab, setSelectedTab] = useState(0);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [countdownPickerVisible, setCountdownPickerVisible] =
     useState<boolean>(false);
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
   const user = useAppSelector(state => state.user);
+  const userId = user?._id;
   const moods = useAppSelector(state => state.mood.allMoods);
   const moodsLastUpdated = useAppSelector(state => state.mood.lastUpdated);
   const savedFrequencies = useAppSelector(
     state => state.savedFrequencies.savedFrequencies,
   );
+  const savedFrequenciesLastUpdated = useAppSelector(
+    state => state.savedFrequencies.lastUpdated,
+  );
+  const hasMoods = moods.length > 0;
+  const hasSavedFrequencies = savedFrequencies.length > 0;
 
   /** Busca Moods com TTL */
-  const getMoods = useCallback(async () => {
-    if (!shouldRefresh(moodsLastUpdated) && moods.length > 0) {return;}
-    setIsLoading(true);
+  const fetchMoods = useCallback(async () => {
     try {
       const response = await getMoodsAll();
       dispatch(setMoods(response?.data ?? []));
     } catch (err) {
       console.error('getMoods failed:', err);
-    } finally {
-      setIsLoading(false);
     }
-  }, [dispatch, moods.length, moodsLastUpdated]);
+  }, [dispatch]);
 
   /** Frequências salvas do usuário */
   const loadFrequencies = useCallback(async () => {
+    if (!userId) {
+      dispatch(clearSavedFrequencies());
+      return;
+    }
     try {
-      const data = await getSavedFrequencies(user._id);
+      const data = await getSavedFrequencies(userId);
       dispatch(setSavedFrequencies(data ?? []));
     } catch (error) {
       console.error('Failed to load frequencies:', error);
     }
-  }, [dispatch, user._id]);
+  }, [dispatch, userId]);
+
+  const refreshData = useCallback(
+    async ({
+      forceMoods = false,
+      forceSaved = false,
+    }: {forceMoods?: boolean; forceSaved?: boolean} = {}) => {
+      const shouldFetchMoods = forceMoods || needsRefresh(moodsLastUpdated);
+      const shouldFetchSavedRaw =
+        forceSaved || needsRefresh(savedFrequenciesLastUpdated);
+      const shouldFetchSaved = shouldFetchSavedRaw && !!userId;
+
+      if (!shouldFetchMoods && !shouldFetchSaved) {
+        return;
+      }
+
+      setIsRefreshing(true);
+      try {
+        const requests: Promise<any>[] = [];
+        if (shouldFetchMoods) {
+          requests.push(fetchMoods());
+        }
+        if (shouldFetchSaved) {
+          requests.push(loadFrequencies());
+        }
+        await Promise.all(requests);
+      } finally {
+        setIsRefreshing(false);
+      }
+    },
+    [fetchMoods, loadFrequencies, moodsLastUpdated, savedFrequenciesLastUpdated, userId],
+  );
 
   /** Ir para lista completa para adicionar */
   const handleAdd = useCallback(() => {
@@ -170,14 +203,21 @@ const Frequencies = () => {
     [mode, handleAdd, handlePlay, handleRemove],
   );
 
-  /** Um único listener de focus */
+  /** inicializa cache apenas quando nunca carregou */
+  useEffect(() => {
+    const forceMoods = !moodsLastUpdated;
+    const forceSaved = !!userId && !savedFrequenciesLastUpdated;
+    if (forceMoods || forceSaved) {
+      refreshData({forceMoods, forceSaved});
+    }
+  }, [refreshData, moodsLastUpdated, savedFrequenciesLastUpdated, userId]);
+
   useEffect(() => {
     const unsubscribeFocus = navigation.addListener('focus', () => {
-      getMoods();
-      loadFrequencies();
+      refreshData({forceSaved: true});
     });
     return unsubscribeFocus;
-  }, [navigation, getMoods, loadFrequencies]);
+  }, [navigation, refreshData]);
 
   /** Alterna modo de organização */
   const handleMode = () => {
@@ -194,7 +234,7 @@ const Frequencies = () => {
 
   return (
     <Container>
-      <Loader loading={isLoading} />
+      <Loader loading={!hasMoods && !hasSavedFrequencies && isRefreshing} />
       <LinearGradient
         colors={['#1E2746', '#113D56', '#045466']}
         style={styles.container}>
@@ -211,6 +251,13 @@ const Frequencies = () => {
               setSelectedTab(index);
             }}
           />
+          {isRefreshing && (hasMoods || hasSavedFrequencies) ? (
+            <ActivityIndicator
+              style={{marginTop: 12}}
+              size="small"
+              color="#fff"
+            />
+          ) : null}
 
           {selectedTab === 0 && (
             <FlatList

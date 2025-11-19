@@ -16,6 +16,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {styles} from './styles';
 import {SvgHeadphones, SvgRightChev} from '../../../assets/svg';
+import images from '../../../assets/images';
 import {goBack, reset} from '../../../navigation/AppNavigator';
 import {RouteProp, useRoute} from '@react-navigation/native';
 import {FREQUENCY, MOOD} from '../../../redux/slice/moodSlice';
@@ -177,6 +178,12 @@ const Mood: React.FC = () => {
 
   // memoiza background de fallback do mood para não re-renderizar o item
   const moodBg = useMemo(() => mood?.background_image || null, [mood?.background_image]);
+  const moodIconSource = useMemo(() => {
+    if (mood?.icon_url) {
+      return {uri: mood.icon_url};
+    }
+    return images.mood_placeholder;
+  }, [mood?.icon_url]);
 
   // renderItem estável, sem criar objetos toda hora
   const renderItem = useCallback<ListRenderItem<FREQUENCY>>(
@@ -199,16 +206,7 @@ const Mood: React.FC = () => {
             ? { renderToHardwareTextureAndroid: true }
             : { shouldRasterizeIOS: true })}
         >
-          {bgUri ? (
-            <Image
-              source={{ uri: bgUri }}
-              style={styles.itemBgFull}
-              resizeMode="cover"
-              pointerEvents="none"
-              // evita relayout em re-render
-              fadeDuration={0}
-            />
-          ) : null}
+         
 
           <View style={styles.itemOverlay} pointerEvents="none" />
 
@@ -262,12 +260,17 @@ const Mood: React.FC = () => {
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
         <HeaderWithBack onBack={handleBack} title={mood?.name} />
 
-        <DottedCircle
+        {/* <DottedCircle
           size={CIRCLE_SIZE}
           strokeColor="#2D7CFF"
           dotColor="#FFFFFF"
           dotRadius={2}
           spacing={CIRCLE_SIZE / 12}
+          style={styles.moodImage}
+        /> */}
+        <Image
+          source={moodIconSource}
+          defaultSource={images.mood_placeholder}
           style={styles.moodImage}
         />
 

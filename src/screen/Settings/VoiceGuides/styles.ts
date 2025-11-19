@@ -8,6 +8,7 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     height: '100%',
+    
   },
   header: {
     flexDirection: 'row',
@@ -44,6 +45,8 @@ export const styles = StyleSheet.create({
     paddingBottom: heightToDP('5%'),
   },
   guideCard: {
+    width: widthToDP('85%'),
+    alignSelf: 'center',
     borderRadius: 37,
     paddingHorizontal: 33,
     paddingVertical: 24,
