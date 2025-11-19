@@ -236,14 +236,17 @@ export const useHomeState = () => {
   }, [dispatch, moodsLastUpdated, frequencyLastUpdated, token]);
 
   useEffect(() => {
-    // Don't show subscription modal if user is not authenticated
-    if (!token || !user?._id) {
+    // Only require token (guest users have tokens too) - registration is optional
+    // App Store Guideline 5.1.1: Users can purchase without registration
+    if (!token) {
       if (isSubscription) {
         setIsSubscription(false);
       }
       return;
     }
 
+    // Check subscription status from RevenueCat (works for both guest and registered users)
+    // For guest users, subscription info comes from RevenueCat, not user object
     const planFromBackend = user?.subscription?.plan ?? 'free';
     const expiryISO = user?.subscription?.expiry;
     const expiryDate = expiryISO ? new Date(expiryISO) : null;
@@ -254,6 +257,7 @@ export const useHomeState = () => {
     const isFreeWithActiveTrial =
       planFromBackend === 'free' && hasValidExpiry && expiryDate! > now;
 
+    // Show modal if user doesn't have premium (works for both guest and registered users)
     const shouldShowModal =
       !rcIsPremium && (planFromBackend === 'free' || hasExpired);
 
@@ -281,7 +285,6 @@ export const useHomeState = () => {
     user?.subscription?.plan,
     user?.subscription?.expiry,
     token,
-    user?._id,
   ]);
 
   return {

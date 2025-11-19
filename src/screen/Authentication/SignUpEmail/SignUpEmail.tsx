@@ -77,9 +77,13 @@ const SignUpEmail: React.FC = () => {
         response = await convertGuestToEmail(email, password);
       } else {
         // Split name into first and last name
+        // Handles: "John" → firstName="John", lastName="John"
+        //          "John Doe" → firstName="John", lastName="Doe"
+        //          "John Michael Doe" → firstName="John", lastName="Michael Doe"
         const nameParts = name.trim().split(/\s+/);
         const firstName = nameParts[0] || name.trim();
-        // If there's a last name, use it; otherwise use the first name as last name
+        // If name has spaces, everything after first space is lastName
+        // If no spaces, lastName = firstName (same as name)
         const lastName =
           nameParts.length > 1 ? nameParts.slice(1).join(' ') : firstName;
 
