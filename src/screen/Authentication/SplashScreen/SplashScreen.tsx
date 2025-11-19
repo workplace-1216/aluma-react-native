@@ -66,11 +66,15 @@ const SplashScreen = () => {
         getFcmToken();
       }
 
-    const timer = setTimeout(() => {
-      // Allow anonymous access - users can purchase without registration
-      // Registration is optional and only needed for cross-device access
-      reset(token ? routes.HOME : routes.HOME);
-    }, 1200); // abre mais rápido
+      // Set a timeout to navigate if tasks take too long
+      const timer = setTimeout(() => {
+        if (isMounted) {
+          // Allow anonymous access - users can purchase without registration
+          // Registration is optional and only needed for cross-device access
+          reset(targetRoute);
+        }
+      }, 1200); // abre mais rápido
+
       if (token && needsRefresh(exLast)) {
         tasks.push(dispatch(fetchAllExercises()));
       }
@@ -123,6 +127,9 @@ const SplashScreen = () => {
       }
 
       await Promise.all(tasks);
+
+      // Clear the timer since we're navigating now
+      clearTimeout(timer);
 
       if (isMounted) {
         reset(targetRoute);

@@ -54,8 +54,7 @@ const Subscriptions = () => {
   const expiryISO = user?.subscription?.expiry;
   const expiryDate = expiryISO ? new Date(expiryISO) : null;
   const now = new Date();
-  const hasValidExpiry =
-    !!expiryDate && !Number.isNaN(expiryDate.getTime());
+  const hasValidExpiry = !!expiryDate && !Number.isNaN(expiryDate.getTime());
   const isPremiumActive =
     user?.subscription?.plan !== 'free' && hasValidExpiry && expiryDate! > now;
   const isTrialActive =
@@ -74,9 +73,10 @@ const Subscriptions = () => {
 
   const getButtonText = () => {
     const currentPlan = user?.subscription?.plan;
-    const isPremium = user?.subscription?.plan !== 'free' && 
-                     user?.subscription?.expiry && 
-                     new Date(user.subscription.expiry) > new Date();
+    const isPremium =
+      user?.subscription?.plan !== 'free' &&
+      user?.subscription?.expiry &&
+      new Date(user.subscription.expiry) > new Date();
 
     if (!isPremium) {
       return 'Continue';
@@ -87,9 +87,11 @@ const Subscriptions = () => {
       return 'Upgrade to Yearly';
     } else if (currentPlan === 'annual' && selectedPlan === 'monthly') {
       return 'Downgrade to Monthly';
-    } else if (currentPlan === selectedPlan || 
-               (currentPlan === 'annual' && selectedPlan === 'yearly') ||
-               (currentPlan === 'monthly' && selectedPlan === 'monthly')) {
+    } else if (
+      currentPlan === selectedPlan ||
+      (currentPlan === 'annual' && selectedPlan === 'yearly') ||
+      (currentPlan === 'monthly' && selectedPlan === 'monthly')
+    ) {
       return 'Manage Subscription';
     }
 
@@ -105,7 +107,10 @@ const Subscriptions = () => {
       setIsLoading(true);
 
       if (!RC_ENABLED) {
-        showToast('Billing is currently disabled. Please try again later.', 'error');
+        showToast(
+          'Billing is currently disabled. Please try again later.',
+          'error',
+        );
         setIsLoading(false);
         return;
       }
@@ -114,7 +119,7 @@ const Subscriptions = () => {
       showToast(`Processing ${plan} subscription...`, 'info');
 
       const {customerInfo} = await purchasePlan(plan);
-      const info = customerInfo || await getCustomerInfoSafe();
+      const info = customerInfo || (await getCustomerInfoSafe());
 
       const premium = isPremium(info);
       if (premium) {
@@ -133,30 +138,44 @@ const Subscriptions = () => {
           expiryISO = computedExpiry.toISOString();
         }
 
-        dispatch(setFromRC({isPremium: true, plan, expiry: expiryISO ?? undefined}));
+        dispatch(
+          setFromRC({isPremium: true, plan, expiry: expiryISO ?? undefined}),
+        );
 
         // Update user subscription if user is registered (optional)
         if (user?._id) {
-          const updatedSubscription: {plan: 'monthly' | 'free' | 'annual'; expiry: string} = {
+          const updatedSubscription: {
+            plan: 'monthly' | 'free' | 'annual';
+            expiry: string;
+          } = {
             plan: normalizedPlan,
-            expiry: expiryISO ?? user.subscription?.expiry ?? new Date().toISOString(),
+            expiry:
+              expiryISO ??
+              user.subscription?.expiry ??
+              new Date().toISOString(),
           };
 
           dispatch(
             setUser({
               ...user,
               subscription: updatedSubscription,
-            })
+            }),
           );
 
           try {
             await updateUser(user._id, {subscription: updatedSubscription});
           } catch (updateErr) {
-            console.warn('[Subscriptions] Failed to persist subscription update', updateErr);
+            console.warn(
+              '[Subscriptions] Failed to persist subscription update',
+              updateErr,
+            );
           }
         } else {
           // User purchased without registration - show optional registration message
-          showToast('Subscription activated! 🎉 Register to access on all your devices.', 'success');
+          showToast(
+            'Subscription activated! 🎉 Register to access on all your devices.',
+            'success',
+          );
           goBack();
           return;
         }
@@ -164,14 +183,29 @@ const Subscriptions = () => {
         showToast('Subscription activated! 🎉', 'success');
         goBack();
       } else {
-        showToast('Purchase did not confirm premium. Try restoring purchases.', 'info');
+        showToast(
+          'Purchase did not confirm premium. Try restoring purchases.',
+          'info',
+        );
       }
     } catch (e: any) {
-      console.error('[Subscriptions] Purchase error:', e);
-      const errorMessage = e?.message || e?.userInfo?.NSLocalizedDescription || 'Please try again';
-      
-      // Don't show error for user cancellation
-      if (!errorMessage.includes('cancel') && !errorMessage.includes('Cancel')) {
+      const errorMessage =
+        e?.message || e?.userInfo?.NSLocalizedDescription || 'Please try again';
+
+      // Check if this is a user cancellation (case-insensitive, various forms)
+      const isCancellation =
+        errorMessage.toLowerCase().includes('cancel') ||
+        errorMessage.toLowerCase().includes('cancelled') ||
+        errorMessage.toLowerCase().includes('cancellation') ||
+        e?.code === 'PURCHASE_CANCELLED' ||
+        e?.userCancelled === true;
+
+      if (isCancellation) {
+        // User cancelled - this is expected behavior, just log as info
+        console.log('[Subscriptions] Purchase was cancelled by user');
+      } else {
+        // Actual error - log and show to user
+        console.error('[Subscriptions] Purchase error:', e);
         showToast(`Purchase error: ${errorMessage}`, 'error');
       }
     } finally {
@@ -189,51 +223,70 @@ const Subscriptions = () => {
       showToast('Restoring purchases...', 'info');
 
       if (!RC_ENABLED) {
-        showToast('Billing is currently disabled. Please try again later.', 'error');
+        showToast(
+          'Billing is currently disabled. Please try again later.',
+          'error',
+        );
         setIsLoading(false);
         return;
       }
 
       const {customerInfo} = await restorePurchases();
-      const info = customerInfo || await getCustomerInfoSafe();
+      const info = customerInfo || (await getCustomerInfoSafe());
 
       const premium = isPremium(info);
       if (premium) {
         const entitlement = info?.entitlements.active[ENTITLEMENT_ID];
         const expiryISO = entitlement?.expirationDate ?? null;
-        const plan = entitlement?.productIdentifier?.includes('yearly') || 
-                    entitlement?.productIdentifier?.includes('annual') 
-                    ? 'yearly' : 'monthly';
+        const plan =
+          entitlement?.productIdentifier?.includes('yearly') ||
+          entitlement?.productIdentifier?.includes('annual')
+            ? 'yearly'
+            : 'monthly';
         const normalizedPlan = plan === 'yearly' ? 'annual' : 'monthly';
 
-        dispatch(setFromRC({
-          isPremium: true,
-          plan,
-          expiry: expiryISO ?? undefined,
-        }));
+        dispatch(
+          setFromRC({
+            isPremium: true,
+            plan,
+            expiry: expiryISO ?? undefined,
+          }),
+        );
 
         // Update user subscription if user is registered (optional)
         if (user?._id) {
-          const updatedSubscription: {plan: 'monthly' | 'free' | 'annual'; expiry: string} = {
+          const updatedSubscription: {
+            plan: 'monthly' | 'free' | 'annual';
+            expiry: string;
+          } = {
             plan: normalizedPlan,
-            expiry: expiryISO ?? user.subscription?.expiry ?? new Date().toISOString(),
+            expiry:
+              expiryISO ??
+              user.subscription?.expiry ??
+              new Date().toISOString(),
           };
 
           dispatch(
             setUser({
               ...user,
               subscription: updatedSubscription,
-            })
+            }),
           );
 
           try {
             await updateUser(user._id, {subscription: updatedSubscription});
           } catch (updateErr) {
-            console.warn('[Subscriptions] Failed to persist subscription update', updateErr);
+            console.warn(
+              '[Subscriptions] Failed to persist subscription update',
+              updateErr,
+            );
           }
         } else {
           // User restored without registration - show optional registration message
-          showToast('Purchases restored! 🎉 Register to access on all your devices.', 'success');
+          showToast(
+            'Purchases restored! 🎉 Register to access on all your devices.',
+            'success',
+          );
           goBack();
           return;
         }
@@ -292,150 +345,177 @@ const Subscriptions = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
           <View style={styles.content}>
-          <View style={styles.statusCard}>
-            <Text style={styles.statusLabel}>{statusLabel}</Text>
-            <Text style={styles.statusDescription}>{statusSubtext}</Text>
-            <View style={styles.statusMetaRow}>
-              <Text style={styles.statusMetaLabel}>Current plan</Text>
-              <Text style={styles.statusMetaValue}>
-                {normalizedCurrentPlan === 'free'
-                  ? 'Free'
-                  : normalizedCurrentPlan === 'yearly'
-                  ? 'Yearly'
-                  : 'Monthly'}
+            <View style={styles.statusCard}>
+              <Text style={styles.statusLabel}>{statusLabel}</Text>
+              <Text style={styles.statusDescription}>{statusSubtext}</Text>
+              <View style={styles.statusMetaRow}>
+                <Text style={styles.statusMetaLabel}>Current plan</Text>
+                <Text style={styles.statusMetaValue}>
+                  {normalizedCurrentPlan === 'free'
+                    ? 'Free'
+                    : normalizedCurrentPlan === 'yearly'
+                    ? 'Yearly'
+                    : 'Monthly'}
+                </Text>
+              </View>
+              <View style={styles.statusMetaRow}>
+                <Text style={styles.statusMetaLabel}>
+                  {isTrialActive ? 'Trial ends' : 'Renews / expires'}
+                </Text>
+                <Text style={styles.statusMetaValue}>
+                  {formattedExpiry ?? '—'}
+                </Text>
+              </View>
+              <Text style={styles.statusHint}>
+                Cancel or re-activate anytime from your app store account.
               </Text>
+              <TouchableOpacity
+                style={styles.manageButton}
+                onPress={handleManageStore}
+                disabled={isLoading}>
+                <Text style={styles.manageButtonText}>
+                  Open Store Subscription Settings
+                </Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.statusMetaRow}>
-              <Text style={styles.statusMetaLabel}>
-                {isTrialActive ? 'Trial ends' : 'Renews / expires'}
-              </Text>
-              <Text style={styles.statusMetaValue}>
-                {formattedExpiry ?? '—'}
-              </Text>
-            </View>
-            <Text style={styles.statusHint}>
-              Cancel or re-activate anytime from your app store account.
-            </Text>
-            <TouchableOpacity
-              style={styles.manageButton}
-              onPress={handleManageStore}
-              disabled={isLoading}>
-              <Text style={styles.manageButtonText}>Open Store Subscription Settings</Text>
-            </TouchableOpacity>
-          </View>
 
-          <View style={styles.textWrapper}>
-            <Text style={styles.titleText}>
-              Choose the plan that fits your practice
-            </Text>
-            {!user?._id && (
-              <Text style={[styles.titleText, {fontSize: 14, marginTop: 8, opacity: 0.8, fontWeight: '400'}]}>
-                You can purchase without registering. Registration is optional and enables access to your subscription on all your devices.
+            <View style={styles.textWrapper}>
+              <Text style={styles.titleText}>
+                Choose the plan that fits your practice
               </Text>
-            )}
-          </View>
-
-          <View style={planStyles.cardsContainer}>
-            {plans.map(plan => {
-              const isSelected = selectedPlan === plan.id;
-              const isCurrent = normalizedCurrentPlan === plan.id;
-
-              return (
-                <TouchableOpacity
-                  key={plan.id}
+              {!user?._id && (
+                <Text
                   style={[
-                    planStyles.planCard,
-                    isSelected ? planStyles.selectedCard : planStyles.unselectedCard,
-                    isLoading && styles.planCardDisabled,
-                  ]}
-                  activeOpacity={0.9}
-                  onPress={() => handlePlanSelect(plan.id)}
-                  disabled={isLoading}>
-                  <Text
-                    style={[
-                      planStyles.planTitle,
-                      isSelected ? planStyles.selectedText : planStyles.unselectedText,
-                    ]}>
-                    {plan.title}
-                  </Text>
-                  <Text
-                    style={[
-                      planStyles.planPrice,
-                      isSelected ? planStyles.selectedText : planStyles.unselectedText,
-                    ]}>
-                    {plan.price}
-                  </Text>
-                  <View style={planStyles.featuresContainer}>
-                    {plan.features.map(feature => (
-                      <View key={`${plan.id}-${feature}`} style={planStyles.featureRow}>
-                        <View
-                          style={[
-                            planStyles.bullet,
-                            {
-                              backgroundColor: isSelected ? colors.BLACK_10 : colors.WHITE,
-                            },
-                          ]}
-                        />
-                        <Text
-                          style={[
-                            planStyles.featureText,
-                            isSelected
-                              ? planStyles.selectedFeatureText
-                              : planStyles.unselectedFeatureText,
-                          ]}>
-                          {feature}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                  {isCurrent ? (
-                    <Text style={styles.currentPlanNote}>Current plan</Text>
-                  ) : null}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          <View style={planStyles.globalFeatures}>
-            {features.map(feature => (
-              <Text key={feature} style={planStyles.globalFeatureText}>
-                {feature}
-              </Text>
-            ))}
-          </View>
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.continueButton, isLoading && styles.continueButtonDisabled]}
-              onPress={handleContinue}
-              disabled={isLoading}>
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.continueButtonText}>{getButtonText()}</Text>
+                    styles.titleText,
+                    {
+                      fontSize: 14,
+                      marginTop: 8,
+                      opacity: 0.8,
+                      fontWeight: '400',
+                    },
+                  ]}>
+                  You can purchase without registering. Registration is optional
+                  and enables access to your subscription on all your devices.
+                </Text>
               )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.restoreButton}
-              onPress={handleRestorePurchases}
-              disabled={isLoading}>
-              <Text style={styles.restoreButtonText}>Restore Purchases</Text>
-            </TouchableOpacity>
-
-            <View style={styles.legalTextContainer}>
-              <Text style={styles.legalText}>
-                By continuing, you agree to our{' '}
-                <Text style={styles.legalLink} onPress={handleTermsPress}>
-                  Terms of Use (EULA)
-                </Text>
-                {' '}and{' '}
-                <Text style={styles.legalLink} onPress={handlePrivacyPress}>
-                  Privacy Policy
-                </Text>
-              </Text>
             </View>
-          </View>
+
+            <View style={planStyles.cardsContainer}>
+              {plans.map(plan => {
+                const isSelected = selectedPlan === plan.id;
+                const isCurrent = normalizedCurrentPlan === plan.id;
+
+                return (
+                  <TouchableOpacity
+                    key={plan.id}
+                    style={[
+                      planStyles.planCard,
+                      isSelected
+                        ? planStyles.selectedCard
+                        : planStyles.unselectedCard,
+                      isLoading && styles.planCardDisabled,
+                    ]}
+                    activeOpacity={0.9}
+                    onPress={() => handlePlanSelect(plan.id)}
+                    disabled={isLoading}>
+                    <Text
+                      style={[
+                        planStyles.planTitle,
+                        isSelected
+                          ? planStyles.selectedText
+                          : planStyles.unselectedText,
+                      ]}>
+                      {plan.title}
+                    </Text>
+                    <Text
+                      style={[
+                        planStyles.planPrice,
+                        isSelected
+                          ? planStyles.selectedText
+                          : planStyles.unselectedText,
+                      ]}>
+                      {plan.price}
+                    </Text>
+                    <View style={planStyles.featuresContainer}>
+                      {plan.features.map(feature => (
+                        <View
+                          key={`${plan.id}-${feature}`}
+                          style={planStyles.featureRow}>
+                          <View
+                            style={[
+                              planStyles.bullet,
+                              {
+                                backgroundColor: isSelected
+                                  ? colors.BLACK_10
+                                  : colors.WHITE,
+                              },
+                            ]}
+                          />
+                          <Text
+                            style={[
+                              planStyles.featureText,
+                              isSelected
+                                ? planStyles.selectedFeatureText
+                                : planStyles.unselectedFeatureText,
+                            ]}>
+                            {feature}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                    {isCurrent ? (
+                      <Text style={styles.currentPlanNote}>Current plan</Text>
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={planStyles.globalFeatures}>
+              {features.map(feature => (
+                <Text key={feature} style={planStyles.globalFeatureText}>
+                  {feature}
+                </Text>
+              ))}
+            </View>
+
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.continueButton,
+                  isLoading && styles.continueButtonDisabled,
+                ]}
+                onPress={handleContinue}
+                disabled={isLoading}>
+                {isLoading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.continueButtonText}>
+                    {getButtonText()}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.restoreButton}
+                onPress={handleRestorePurchases}
+                disabled={isLoading}>
+                <Text style={styles.restoreButtonText}>Restore Purchases</Text>
+              </TouchableOpacity>
+
+              <View style={styles.legalTextContainer}>
+                <Text style={styles.legalText}>
+                  By continuing, you agree to our{' '}
+                  <Text style={styles.legalLink} onPress={handleTermsPress}>
+                    Terms of Use (EULA)
+                  </Text>{' '}
+                  and{' '}
+                  <Text style={styles.legalLink} onPress={handlePrivacyPress}>
+                    Privacy Policy
+                  </Text>
+                </Text>
+              </View>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

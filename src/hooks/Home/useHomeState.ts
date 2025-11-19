@@ -63,6 +63,7 @@ export const useHomeState = () => {
   const frequencyLastUpdated = useAppSelector(
     state => state.frequency.lastUpdated,
   );
+  const token = useAppSelector(state => state.auth.token?.token);
 
   const [exercise, setExercise] = useState<BreathworkExercise>();
   const [frequencyInfo, setFrequencyInfo] = useState<FREQUENCY>();
@@ -215,12 +216,12 @@ export const useHomeState = () => {
       return;
     }
     const task = InteractionManager.runAfterInteractions(() => {
-      if (needsRefresh(moodsLastUpdated)) {
+      if (needsRefresh(moodsLastUpdated) && token) {
         getMoodsAll()
           .then(response => dispatch(setMoods(response?.data ?? [])))
           .catch(err => console.error('Background moods refresh failed:', err));
       }
-      if (needsRefresh(frequencyLastUpdated)) {
+      if (needsRefresh(frequencyLastUpdated) && token) {
         getAllFrequencies()
           .then(response => dispatch(setFrequencies(response?.data ?? [])))
           .catch(err =>
@@ -232,9 +233,17 @@ export const useHomeState = () => {
     return () => {
       task.cancel?.();
     };
-  }, [dispatch, moodsLastUpdated, frequencyLastUpdated]);
+  }, [dispatch, moodsLastUpdated, frequencyLastUpdated, token]);
 
   useEffect(() => {
+    // Don't show subscription modal if user is not authenticated
+    if (!token || !user?._id) {
+      if (isSubscription) {
+        setIsSubscription(false);
+      }
+      return;
+    }
+
     const planFromBackend = user?.subscription?.plan ?? 'free';
     const expiryISO = user?.subscription?.expiry;
     const expiryDate = expiryISO ? new Date(expiryISO) : null;
@@ -271,6 +280,8 @@ export const useHomeState = () => {
     subscriptionDismissed,
     user?.subscription?.plan,
     user?.subscription?.expiry,
+    token,
+    user?._id,
   ]);
 
   return {

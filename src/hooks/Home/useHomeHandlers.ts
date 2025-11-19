@@ -48,7 +48,7 @@ const useHomeHandlers = ({
   try {
     // no RC: close and warn
     if (!RC_ENABLED) {
-      showToast('Billing disabled (missing keys). Demo mode.', { type: 'warning' });
+      showToast('Billing disabled (missing keys). Demo mode.', 'info');
       setIsSubscription(false);
       return;
     }
@@ -57,7 +57,7 @@ const useHomeHandlers = ({
     const plan: 'monthly' | 'yearly' =
       user?.subscription?.plan === 'annual' ? 'yearly' : selectedPlan;
 
-    showToast(`Starting purchase (${plan})...`, { type: 'normal' });
+    showToast(`Starting purchase (${plan})...`, 'info');
 
     await purchasePlan(plan);
     const info = await getCustomerInfoSafe();
@@ -104,23 +104,41 @@ const useHomeHandlers = ({
       } else {
         // User purchased without registration - show optional registration prompt
         // Registration enables cross-device access but is not required
-        showToast('Subscription activated! 🎉 Register to access on all your devices.', { type: 'success' });
+        showToast('Subscription activated! 🎉 Register to access on all your devices.', 'success');
         setSubscriptionDismissed(false);
         setIsSubscription(false);
         return; // Early return to show success message
       }
 
-      showToast('Subscription activated! 🎉', { type: 'success' });
+      showToast('Subscription activated! 🎉', 'success');
       setSubscriptionDismissed(false);
       setIsSubscription(false);
     } else {
-      showToast('Purchase did not confirm premium. Try restoring.', { type: 'warning' });
+      showToast('Purchase did not confirm premium. Try restoring.', 'info');
       setIsSubscription(true);
     }
   } catch (e: any) {
-    console.error('[billing] purchase error', e);
-    showToast(`Purchase error: ${e?.message ?? 'please try again'}`, { type: 'danger' });
-    setIsSubscription(true);
+    const errorMessage = e?.message || e?.userInfo?.NSLocalizedDescription || 'please try again';
+
+    // Check if this is a user cancellation (case-insensitive, various forms)
+    const isCancellation =
+      errorMessage.toLowerCase().includes('cancel') ||
+      errorMessage.toLowerCase().includes('cancelled') ||
+      errorMessage.toLowerCase().includes('cancellation') ||
+      e?.code === 'PURCHASE_CANCELLED' ||
+      e?.userCancelled === true;
+
+    if (isCancellation) {
+      // User cancelled - this is expected behavior, just log as info
+      console.log('[billing] Purchase was cancelled by user');
+      // Don't show error toast or keep modal open for cancellations
+      setIsSubscription(false);
+    } else {
+      // Actual error - log and show to user
+      console.error('[billing] purchase error', e);
+      showToast(`Purchase error: ${errorMessage}`, 'error');
+      setIsSubscription(true);
+    }
   }
 };
 

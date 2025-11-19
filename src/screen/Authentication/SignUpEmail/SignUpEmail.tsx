@@ -76,12 +76,19 @@ const SignUpEmail: React.FC = () => {
       if (isGuestUser) {
         response = await convertGuestToEmail(email, password);
       } else {
+        // Split name into first and last name
+        const nameParts = name.trim().split(/\s+/);
+        const firstName = nameParts[0] || name.trim();
+        // If there's a last name, use it; otherwise use the first name as last name
+        const lastName =
+          nameParts.length > 1 ? nameParts.slice(1).join(' ') : firstName;
+
         response = await register({
           email,
           purpose,
           password,
-          firstName: name.split(' ').length > 0 ? name.split(' ')[0] : name,
-          lastName: name.split(' ').length > 0 ? name.split(' ')[1] : '',
+          firstName,
+          lastName,
           signUpType: 'manual',
           fcmToken,
         });
@@ -101,7 +108,10 @@ const SignUpEmail: React.FC = () => {
         try {
           await setPurposeAPI({email: user.email, purpose});
         } catch (purposeError) {
-          console.warn('Failed to set purpose for guest conversion', purposeError);
+          console.warn(
+            'Failed to set purpose for guest conversion',
+            purposeError,
+          );
         }
       }
 
