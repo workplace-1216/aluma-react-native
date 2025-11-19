@@ -25,6 +25,7 @@ type BottomSheetProps = {
   backgroundColor?: string;
   draggable?: boolean;
   disableClose?: boolean;
+  showCloseButton?: boolean;
 };
 
 export interface RBSheetRef {
@@ -44,6 +45,7 @@ const BottomSheet = ({
   showAvailabilityToggle = false,
   draggable = false,
   disableClose = false,
+  showCloseButton = true,
 }: BottomSheetProps) => {
   const [, setShow] = useState(false);
   const refRBSheet = useRef<RBSheetRef>(null);
@@ -118,17 +120,22 @@ const BottomSheet = ({
                 showAvailabilityToggle
                   ? styles.headerWrapperWithToggle
                   : styles.headerWrapperWithoutToggle,
+                !showCloseButton && styles.headerNoCloseButton,
               ]}>
-              <View style={styles.closeButtonContainer}>
-                <Pressable
-                  onPress={handleClose}
-                  style={styles.closeButton}
-                  disabled={disableClose}>
-                  <Text style={[styles.close, disableClose && {opacity: 0}]}>
-                    X
-                  </Text>
-                </Pressable>
-              </View>
+              {showCloseButton ? (
+                <View style={styles.closeButtonContainer}>
+                  <Pressable
+                    onPress={handleClose}
+                    style={styles.closeButton}
+                    disabled={disableClose}>
+                    <Text style={[styles.close, disableClose && {opacity: 0}]}>
+                      X
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={styles.closeButtonPlaceholder} />
+              )}
 
               <Text style={styles.title}>{title}</Text>
             </View>

@@ -17,11 +17,11 @@ import {getSavedFrequencies} from '../../../service/frequency/UserFrequencies/ge
 import {setSavedFrequencies} from '../../../redux/slice/savedFrequenciesSlice';
 import {setUserPlayingTime} from '../../../service/users/setUserPlayingTime';
 import {updatePlayingTime} from '../../../redux/slice/userSlice';
-
-// TTL helper local (6 horas)
-const TTL_6H = 6 * 60 * 60 * 1000;
-const shouldRefresh = (lastUpdated?: number, ttlMs = TTL_6H) =>
-  !lastUpdated || Date.now() - lastUpdated > ttlMs;
+import {getMoodsAll} from '../../../service/mood/getMoodsAlll';
+import {setMoods} from '../../../redux/slice/moodSlice';
+import {setFrequencies} from '../../../redux/slice/frequencySlice';
+import {getAllFrequencies} from '../../../service/frequency/getAllFrequencies';
+import {needsRefresh} from '../../../utils/functions';
 
 const SplashScreen = () => {
   const dispatch = useAppDispatch();
@@ -32,9 +32,10 @@ const SplashScreen = () => {
   // timestamps dos catálogos
   const exLast = useAppSelector(s => s.breathExercise.lastUpdated);
   const vgLast = useAppSelector(s => (s as any).voiceGuide.lastUpdated);
-  const nmLast = useAppSelector(s => s.nightMode.lastUpdated); // adicionado no slice
-  // (moods são carregados na tela Frequencies; se quiser, pode disparar aqui também)
-  // const moodsLast = useAppSelector(s => s.mood.lastUpdated);
+  const nmLast = useAppSelector(s => s.nightMode.lastUpdated);
+  const moodsLast = useAppSelector(s => s.mood.lastUpdated);
+  const frequencyLast = useAppSelector(s => s.frequency.lastUpdated);
+  const savedFreqLast = useAppSelector(s => s.savedFrequencies.lastUpdated);
 
   // sync playing time diário
   useEffect(() => {
@@ -55,32 +56,96 @@ const SplashScreen = () => {
   }, []);
 
   useEffect(() => {
-    if (token) {
-      getFcmToken();
+    let isMounted = true;
+    const targetRoute = token ? routes.HOME : routes.CONNECT;
 
-      // 🔄 Atualizações em background somente se TTL expirou
-      if (shouldRefresh(exLast)) {dispatch(fetchAllExercises());}
-      if (shouldRefresh(vgLast)) {dispatch(fetchAllGuidedVoice());}
-      if (shouldRefresh(nmLast)) {dispatch(fetchNightMode());}
-      // if (shouldRefresh(moodsLast)) dispatch(fetchMoodsThunk()); // se existir
+    const bootstrap = async () => {
+      const tasks: Promise<any>[] = [];
 
-      (async () => {
-        try {
-          const data = await getSavedFrequencies(user._id);
-          dispatch(setSavedFrequencies(data));
-        } catch {}
-      })();
-    }
+      if (token) {
+        getFcmToken();
+      }
 
     const timer = setTimeout(() => {
       // Allow anonymous access - users can purchase without registration
       // Registration is optional and only needed for cross-device access
       reset(token ? routes.HOME : routes.HOME);
     }, 1200); // abre mais rápido
+      if (token && needsRefresh(exLast)) {
+        tasks.push(dispatch(fetchAllExercises()));
+      }
 
-    return () => clearTimeout(timer);
+      if (token && needsRefresh(vgLast)) {
+        tasks.push(dispatch(fetchAllGuidedVoice()));
+      }
+
+      if (token && needsRefresh(nmLast)) {
+        tasks.push(dispatch(fetchNightMode()));
+      }
+
+      if (needsRefresh(moodsLast)) {
+        tasks.push(
+          (async () => {
+            try {
+              const response = await getMoodsAll();
+              dispatch(setMoods(response?.data ?? []));
+            } catch (error) {
+              console.error('Failed to preload moods:', error);
+            }
+          })(),
+        );
+      }
+
+      if (needsRefresh(frequencyLast)) {
+        tasks.push(
+          (async () => {
+            try {
+              const response = await getAllFrequencies();
+              dispatch(setFrequencies(response?.data ?? []));
+            } catch (error) {
+              console.error('Failed to preload frequencies:', error);
+            }
+          })(),
+        );
+      }
+
+      if (token && user?._id && needsRefresh(savedFreqLast)) {
+        tasks.push(
+          (async () => {
+            try {
+              const data = await getSavedFrequencies(user._id);
+              dispatch(setSavedFrequencies(data ?? []));
+            } catch (error) {
+              console.error('Failed to preload saved frequencies:', error);
+            }
+          })(),
+        );
+      }
+
+      await Promise.all(tasks);
+
+      if (isMounted) {
+        reset(targetRoute);
+      }
+    };
+
+    bootstrap();
+
+    return () => {
+      isMounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    token,
+    dispatch,
+    exLast,
+    vgLast,
+    nmLast,
+    moodsLast,
+    frequencyLast,
+    savedFreqLast,
+    user?._id,
+  ]);
 
   return (
     <LinearGradient

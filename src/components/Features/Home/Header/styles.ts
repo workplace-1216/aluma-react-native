@@ -14,7 +14,7 @@ export const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: widthToDP(5),
     paddingVertical: widthToDP(3),
-    marginBottom: heightToDP('3.111%'),
+    marginBottom: heightToDP('1.3%'),
   },
   breathExerciseDetail: {
     fontSize: heightToDP('1.7%'),

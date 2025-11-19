@@ -4,7 +4,7 @@ import responsiveUtils from '../../../utils/responsiveUtils';
 import {isSmallAppleScreen} from '../../../utils/isSmallAppleScreen';
 
 const {width} = Dimensions.get('window');
-const circleSize = width * (isSmallAppleScreen ? 0.9 : 0.80);
+const circleSize = width * (isSmallAppleScreen ? 0.9 : 0.95);
 
 export const styles = StyleSheet.create({
   container: {
@@ -14,10 +14,17 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    borderWidth: 3,
-    borderColor: colors.WHITE,
+    backgroundColor: 'transparent',
   },
   circle: {
+    width: circleSize * 0.77,
+    height: circleSize * 0.77,
+    borderRadius: (circleSize * 0.77) / 2,
+    borderWidth: 4,
+    borderColor: colors.WHITE,
+    position: 'absolute',
+  },
+  innerCircle: {
     width: circleSize * 0.5,
     height: circleSize * 0.5,
     borderRadius: circleSize * 0.25,

@@ -24,13 +24,15 @@ interface PlanCard {
 }
 
 interface PlanSelectionSectionProps {
-  selectedPlan: SubscriptionPlan;
+  selectedPlan: SubscriptionPlan | null;
   onSelectPlan: (planId: SubscriptionPlan) => void;
   onSubscribe: () => void;
   plans: PlanCard[];
   globalFeatures: string[];
   disabled?: boolean;
   loading?: boolean;
+  ctaLabel?: string;
+  onPrimaryAction?: () => void;
 }
 
 const PlanSelectionSection = ({
@@ -41,12 +43,19 @@ const PlanSelectionSection = ({
   globalFeatures,
   disabled = false,
   loading = false,
+  ctaLabel = 'Continue',
+  onPrimaryAction,
 }: PlanSelectionSectionProps) => {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
 
   const handlePrimaryCta = () => {
     if (disabled || loading) {
+      return;
+    }
+
+    if (onPrimaryAction) {
+      onPrimaryAction();
       return;
     }
 
@@ -138,14 +147,16 @@ const PlanSelectionSection = ({
       </View>
 
       <TouchableOpacity
-        style={[styles.subscribeButton, (disabled || loading) && { opacity: 0.6 }]}
+        style={[
+          styles.subscribeButton,
+          (disabled || loading) && {opacity: 0.6},
+        ]}
         onPress={handlePrimaryCta}
-        disabled={disabled || loading}
-      >
+        disabled={disabled || loading}>
         {loading ? (
           <ActivityIndicator />
         ) : (
-          <Text style={styles.subscribeButtonText}>Continue</Text>
+          <Text style={styles.subscribeButtonText}>{ctaLabel}</Text>
         )}
       </TouchableOpacity>
       {/* Legal footer abaixo do Continue */}

@@ -36,10 +36,17 @@ export const styles = StyleSheet.create({
   headerWrapperWithoutToggle: {
     paddingBottom: 20,
   },
+  headerNoCloseButton: {
+    paddingTop: 16,
+  },
   closeButtonContainer: {
     width: '100%',
     alignItems: 'flex-end',
     paddingTop: 2,
+  },
+  closeButtonPlaceholder: {
+    width: '100%',
+    height: 24,
   },
   closeButton: {
     paddingHorizontal: 10,

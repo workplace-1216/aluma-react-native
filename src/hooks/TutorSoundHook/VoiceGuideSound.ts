@@ -14,11 +14,17 @@ type UseSoundReturn = {
   error: string | null;
 };
 
-const VoiceGuideSound = (url: string | undefined): UseSoundReturn => {
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+
+const VoiceGuideSound = (
+  url: string | undefined,
+  volume: number = 1,
+): UseSoundReturn => {
   const soundRef = useRef<Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const volumeRef = useRef(clamp01(volume));
 
   const loadSound = useCallback(() => {
     if (!url) {return;}
@@ -39,6 +45,11 @@ const VoiceGuideSound = (url: string | undefined): UseSoundReturn => {
           setIsLoaded(false);
           return;
         }
+        try {
+          sound.setVolume(volumeRef.current);
+        } catch (e) {
+          // ignore volume sync errors
+        }
         setIsLoaded(true);
         setError(null);
       },
@@ -46,6 +57,18 @@ const VoiceGuideSound = (url: string | undefined): UseSoundReturn => {
 
     soundRef.current = sound;
   }, [url]);
+
+  useEffect(() => {
+    const nextVolume = clamp01(volume);
+    volumeRef.current = nextVolume;
+    if (soundRef.current) {
+      try {
+        soundRef.current.setVolume(nextVolume);
+      } catch (e) {
+        // ignore runtime volume errors
+      }
+    }
+  }, [volume]);
 
   useEffect(() => {
     loadSound();

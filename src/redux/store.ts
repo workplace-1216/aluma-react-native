@@ -86,6 +86,9 @@ const persistConfig = {
   whitelist: [
     'auth',
     'user',
+    'mood',
+    'frequency',
+    'breathExercise',
     'savedFrequencies',
     'savedVideos',
     'nightMode',

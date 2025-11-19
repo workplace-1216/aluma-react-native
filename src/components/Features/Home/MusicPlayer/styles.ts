@@ -11,6 +11,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignSelf: 'center',
     marginTop: widthToDP(2),
+    marginBottom: widthToDP(3),
   },
   exerciseInfo: {
     flex: 1,
@@ -18,12 +19,15 @@ export const styles = StyleSheet.create({
   exerciseTitle: {
     color: colors.WHITE,
     fontWeight: '600',
-    fontSize: widthToDP(4),
+    fontSize: 21,
+    letterSpacing:0.5,
   },
   exerciseMeta: {
     color: colors.WHITE,
-    fontSize: widthToDP(4),
+    fontSize: 21,
     marginTop: 2,
+    fontWeight: '600',
+     letterSpacing:0.5,
   },
   timerButton: {
     height: heightToDP(4.2),

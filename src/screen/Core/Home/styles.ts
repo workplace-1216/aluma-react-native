@@ -27,6 +27,9 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: widthToDP(isSmallAppleScreen ? 1 : 4),
   },
+  volumeSliderExerciseSpacing: {
+    marginTop: 0,
+  },
   chevronPlaceholder: {
     height: responsiveUtils.relativeWidth(CHEVRON_PLACEHOLDER_SIZE),
     padding: widthToDP(2),

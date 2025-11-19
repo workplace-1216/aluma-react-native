@@ -80,10 +80,13 @@ const {
     isRunning,
   } = useBaseAudioPlayer();
 
+  const sliderVolume = useAppSelector(state => state.volume.volume ?? 1);
+
   // --- Quadrant Audio Player ---
   const {playQuadrant, stopQuadrant, setVolume} = useQuadrantAudioPlayer(
     displayFrequency,
     night,
+    sliderVolume,
   );
 
   const {
@@ -114,6 +117,16 @@ const {
     selectedPlan,
     setSubscriptionDismissed,
   });
+  const subscriptionPlan = user?.subscription?.plan ?? 'free';
+  const expiryISO = user?.subscription?.expiry;
+  const expiryDate = expiryISO ? new Date(expiryISO) : null;
+  const now = new Date();
+  const hasValidExpiry =
+    !!expiryDate && !Number.isNaN(expiryDate.getTime());
+  const isTrialActive =
+    subscriptionPlan === 'free' && hasValidExpiry && expiryDate! > now;
+  const disableSubscriptionClose =
+    new Date(user?.subscription?.expiry ?? 0) <= now;
 
   const displayFrequency = useAppSelector(selectCurrentFrequency);
   const [guestVideoPromptVisible, setGuestVideoPromptVisible] = React.useState(false);
@@ -307,7 +320,8 @@ const {
         selectedPlan={selectedPlan}
         setSelectedPlan={setSelectedPlan}
         handleSubscribe={handleSubscriptionContinue}
-        disableClose={user?.subscription?.expiry ? new Date(user.subscription.expiry) <= new Date() : false}
+        disableClose={disableSubscriptionClose}
+        isTrialActive={isTrialActive}
       />
       <BottomHomeModal
         globalFeatures={globalFeatures}
@@ -364,7 +378,12 @@ const {
                 {isSmallAppleScreen ? (
                   <View style={{height: widthToDP(2)}} />
                 ) : null}
-                <VolumeSlider setVolume={setVolume} />
+                <View
+                  style={
+                    exercise ? styles.volumeSliderExerciseSpacing : undefined
+                  }>
+                  <VolumeSlider setVolume={setVolume} />
+                </View>
                 {!frequencyInfo && (
                   <BottomButtons
                     currentFrequency={displayFrequency}
@@ -375,7 +394,7 @@ const {
                   />
                 )}
                 {isSmallAppleScreen ? (
-                  <View style={{height: widthToDP(1)}} />
+                  <View style={{height: widthToDP(2)}} />
                 ) : null}
                 <PlayControls
                   exercise={exercise}

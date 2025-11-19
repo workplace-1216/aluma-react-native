@@ -89,7 +89,6 @@ export const styles = StyleSheet.create({
   /* === ADIÇÕES PARA BACKGROUND DA CÉLULA === */
  itemOverlay: {
   ...StyleSheet.absoluteFillObject,
-  backgroundColor: 'rgba(0,0,0,0.28)', // escurece levemente a imagem
 },
 itemBgFull: {
   ...StyleSheet.absoluteFillObject, // cobre todo o retângulo do item

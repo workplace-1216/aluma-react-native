@@ -14,10 +14,12 @@ export interface SavedVideoItem {
 
 interface SavedVideosState {
   savedVideos: SavedVideoItem[];
+  lastUpdated?: number;
 }
 
 const initialState: SavedVideosState = {
   savedVideos: [],
+  lastUpdated: undefined,
 };
 
 const savedVideosSlice = createSlice({
@@ -26,6 +28,7 @@ const savedVideosSlice = createSlice({
   reducers: {
     setSavedVideos: (state, action: PayloadAction<SavedVideoItem[]>) => {
       state.savedVideos = action.payload;
+      state.lastUpdated = Date.now();
     },
     addSavedVideo: (state, action: PayloadAction<SavedVideoItem>) => {
       const exists = state.savedVideos.some(
@@ -36,6 +39,7 @@ const savedVideosSlice = createSlice({
         ...action.payload,
         savedAt: action.payload.savedAt ?? Date.now(),
       });
+      state.lastUpdated = Date.now();
     },
     removeSavedVideo: (
       state,
@@ -47,9 +51,11 @@ const savedVideosSlice = createSlice({
         }
         return video.id !== (action as any).payload.id;
       });
+      state.lastUpdated = Date.now();
     },
     clearSavedVideos: state => {
       state.savedVideos = [];
+      state.lastUpdated = undefined;
     },
   },
 });

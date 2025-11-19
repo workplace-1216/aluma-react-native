@@ -343,7 +343,7 @@ const Connect = () => {
   </View>
 </Pressable>
 
-          <Pressable
+          {/* <Pressable
             onPress={handleGuestRestore}
             disabled={!accepted || guestLoading || restoreLoading}
             accessibilityRole="button"
@@ -372,7 +372,7 @@ const Connect = () => {
                 Restore purchases
               </Text>
             )}
-          </Pressable>
+          </Pressable> */}
 
           {/* (Optional) small helper text */}
           {!accepted && (
