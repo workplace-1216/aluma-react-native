@@ -1,8 +1,11 @@
-import { StyleSheet } from 'react-native';
+import {Dimensions, StyleSheet} from 'react-native';
 import responsiveUtils from '../../../../utils/responsiveUtils';
 import colors from '../../../../assets/colors';
 import Fonts from '../../../../assets/fonts';
 import { heightToDP, widthToDP } from 'react-native-responsive-screens';
+
+const {height, width} = Dimensions.get('window');
+const isSmallHeight = height < 750;
 
 export const styles = StyleSheet.create({
   HeaderText: {
@@ -19,9 +22,9 @@ export const styles = StyleSheet.create({
     paddingLeft: '6%',
   },
   circleLogo: {
-    height: widthToDP('30.23%'),
-    width: widthToDP('30.23%'),
-    marginBottom: heightToDP('1.788%'),
+    height: isSmallHeight ? widthToDP('22%') : widthToDP('30.23%'),
+    width: isSmallHeight ? widthToDP('22%') : widthToDP('30.23%'),
+    marginBottom: heightToDP('1.4%'),
   },
   description: {
     textAlign: 'center',
@@ -30,7 +33,7 @@ export const styles = StyleSheet.create({
     letterSpacing: responsiveUtils.relativeFontSize(22) * -0.03,
     lineHeight: responsiveUtils.relativeFontSize(22),
     fontFamily: Fonts.FigtreeMedium,
-    paddingHorizontal: widthToDP('5%'),
+    paddingHorizontal: isSmallHeight ? 20 : widthToDP('5%'),
   },
   headerView: {
     alignItems: 'center',
@@ -38,19 +41,19 @@ export const styles = StyleSheet.create({
   },
   subContainer: {
     flex: 1,
-    paddingHorizontal: widthToDP('12.09%'),
-    paddingTop: widthToDP('4.5%'),
-    paddingBottom: widthToDP(1),
+    paddingHorizontal: isSmallHeight ? 24 : widthToDP('12.09%'),
+    paddingTop: isSmallHeight ? 16 : widthToDP('4.5%'),
+    paddingBottom: isSmallHeight ? 16 : widthToDP(1),
     alignItems: 'center',
   },
   footerView: {
     alignItems: 'center',
     width: '100%',
     alignSelf: 'center',
-    justifyContent: 'flex-end',
-    gap: widthToDP('7.3%'),
-    paddingTop: widthToDP('10%'),
-    marginTop: widthToDP('17.3%'),
+    justifyContent: 'flex-start',
+    gap: isSmallHeight ? 10 : widthToDP('4%'),
+    paddingTop: isSmallHeight ? 12 : widthToDP('5%'),
+    marginTop: isSmallHeight ? 12 : widthToDP('6%'),
   },
   messageContainer: {
     position: 'absolute',

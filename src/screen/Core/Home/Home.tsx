@@ -78,10 +78,18 @@ const {
   } = useBaseAudioPlayer();
 
   const sliderVolume = useAppSelector(state => state.volume.volume ?? 1);
+  const currentFrequency = useAppSelector(selectCurrentFrequency);
+  const nightModeFrequency = useAppSelector(
+    state => state.nightMode.frequency?.[0],
+  );
+  const musicWheelFrequency =
+    night && nightModeFrequency ? nightModeFrequency : currentFrequency;
+  const backgroundFrequency =
+    night && nightModeFrequency ? nightModeFrequency : currentFrequency;
 
   // --- Quadrant Audio Player ---
   const {playQuadrant, stopQuadrant, setVolume} = useQuadrantAudioPlayer(
-    displayFrequency,
+    musicWheelFrequency,
     night,
     sliderVolume,
   );
@@ -125,9 +133,10 @@ const {
   const disableSubscriptionClose =
     new Date(user?.subscription?.expiry ?? 0) <= now;
 
-  const displayFrequency = useAppSelector(selectCurrentFrequency);
   const [guestVideoPromptVisible, setGuestVideoPromptVisible] = React.useState(false);
   const [lastVoiceGuide, setLastVoiceGuide] = React.useState<VoiceGuide | null>(null);
+  const [lastVoiceGuideMute, setLastVoiceGuideMute] = React.useState(false);
+  const [shouldMuteVoiceGuide, setShouldMuteVoiceGuide] = React.useState(false);
   const isGuestUser =
     !user ||
     user?.provider === 'guest' ||
@@ -173,19 +182,22 @@ const {
   );
 
   const handleStartGuide = React.useCallback(
-    (guide: VoiceGuide | null) => {
+    ({guide, muteAudio}: {guide: VoiceGuide | null; muteAudio: boolean}) => {
       if (isGuestUser) {
         setGuestVideoPromptVisible(true);
-        return;
       }
 
       if (!guide) {
         setLastVoiceGuide(null);
+        setLastVoiceGuideMute(muteAudio);
+        setShouldMuteVoiceGuide(muteAudio);
         // "No voice" → mantenha o MusicWheel
         return;
       }
 
       setLastVoiceGuide(guide);
+      setLastVoiceGuideMute(muteAudio);
+      setShouldMuteVoiceGuide(muteAudio);
 
       // 1) Se o backend já populou o exercício no guide:
       const exPopulado = (guide.exercise_id as unknown) as BreathworkExercise | undefined;
@@ -211,6 +223,8 @@ const {
       isGuestUser,
       setGuestVideoPromptVisible,
       setLastVoiceGuide,
+      setLastVoiceGuideMute,
+      setShouldMuteVoiceGuide,
       setExercise,
       breathExercise,
     ],
@@ -221,8 +235,18 @@ const {
       return;
     }
 
-    handleStartGuide(lastVoiceGuide);
-  }, [handleStartGuide, lastVoiceGuide]);
+    handleStartGuide({guide: lastVoiceGuide, muteAudio: lastVoiceGuideMute});
+  }, [handleStartGuide, lastVoiceGuide, lastVoiceGuideMute]);
+
+  const handleRequireSubscription = React.useCallback(() => {
+    setIsVoiceSettingVisible(false);
+    setIsSubscription(true);
+  }, [setIsVoiceSettingVisible, setIsSubscription]);
+
+  const handleVoiceSubscriptionRedirect = React.useCallback(() => {
+    setIsVoiceSettingVisible(false);
+    navigate(routes.SUBSCRIPTIONS);
+  }, [setIsVoiceSettingVisible]);
 
   const handleGuestCtaPress = React.useCallback(() => {
     navigate(routes.SIGN_UP);
@@ -286,6 +310,7 @@ const {
         tutors={tutors}
         exerciseId={exercise?._id}
         onStartGuide={handleStartGuide}
+        onRequireSubscription={handleVoiceSubscriptionRedirect}
       />
       <RenderSleepTimerModal
         isTimerModalVisible={isTimerModalVisible}
@@ -306,13 +331,15 @@ const {
         globalFeatures={globalFeatures}
         isVisible={isBottomModalVisible}
         onClose={() => setIsBottomModalVisible(false)}
+        onRequireSubscription={handleRequireSubscription}
         isPlaying={isPlaying}
         exercise={exercise}
         onBackFromExercise={onBackFromExercise}
         play={play}
         pauseMusic={pauseMusic}
         setVolume={setVolume}
-        currentFrequency={displayFrequency}
+        currentFrequency={currentFrequency}
+        backgroundFrequency={backgroundFrequency}
         onVoiceGuidePress={toggleVoiceSettings}
         onSharePress={onSelectFrequencyInfo}
       />
@@ -325,7 +352,7 @@ const {
         <Animated.View style={styles.animatedView}>
           <BackgroundWrapper
             night={night}
-            currentFrequency={displayFrequency}>
+            currentFrequency={backgroundFrequency}>
             {frequencyInfo && <View style={styles.overlay} />}
             <SafeAreaView edges={['top', 'bottom']} style={styles.safeAreaView}>
               <Header
@@ -335,25 +362,35 @@ const {
               />
 
               <View style={styles.content}>
-                {frequencyInfo ? (
-                  <FrequencyInfo
-                    frequencyInfo={frequencyInfo}
-                    onBack={onBackFromFrequencyInfo}
-                  />
-                ) : (
-                  // No JSX onde você renderiza o <MusicPlayer />:
-                  <MusicPlayer
-                    exercise={exercise}
-                    setIsTimerModalVisible={toggleTimerModal}
-                    currentFrequency={displayFrequency}
-                    onSelectSound={setMoodWheelItemIndex}
-                    playQuadrant={playQuadrant}
-                    isGuestUser={isGuestUser}
-                    onGuestCtaPress={handleGuestCtaPress}
-                    onStartLastGuide={handleStartLastGuide}
-                    hasLastVoiceGuide={Boolean(lastVoiceGuide)}
-                  />
-                )}
+                <View style={styles.playerStack}>
+                  <View
+                    style={[
+                      styles.musicPlayerWrapper,
+                      frequencyInfo && styles.musicPlayerHidden,
+                    ]}>
+                    <MusicPlayer
+                      exercise={exercise}
+                      setIsTimerModalVisible={toggleTimerModal}
+                      currentFrequency={musicWheelFrequency}
+                      onSelectSound={setMoodWheelItemIndex}
+                      playQuadrant={playQuadrant}
+                      isGuestUser={isGuestUser}
+                      onGuestCtaPress={handleGuestCtaPress}
+                      onStartLastGuide={handleStartLastGuide}
+                      hasLastVoiceGuide={Boolean(lastVoiceGuide)}
+                      muteVoiceGuide={shouldMuteVoiceGuide}
+                    />
+                  </View>
+
+                  {frequencyInfo ? (
+                    <View style={styles.frequencyInfoOverlay}>
+                      <FrequencyInfo
+                        frequencyInfo={frequencyInfo}
+                        onBack={onBackFromFrequencyInfo}
+                      />
+                    </View>
+                  ) : null}
+                </View>
                 {isSmallAppleScreen ? (
                   <View style={{height: widthToDP(2)}} />
                 ) : null}
@@ -365,10 +402,10 @@ const {
                 </View>
                 {!frequencyInfo && (
                   <BottomButtons
-                    currentFrequency={displayFrequency}
+                    currentFrequency={currentFrequency}
                     onInfoPress={toggleVoiceSettings}
                     onVoiceSettingPress={() =>
-                      onSelectFrequencyInfo(displayFrequency)
+                      onSelectFrequencyInfo(currentFrequency)
                     }
                   />
                 )}

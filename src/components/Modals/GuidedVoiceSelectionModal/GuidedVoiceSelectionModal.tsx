@@ -6,6 +6,11 @@ import {TutorResponse, VoiceGuide} from '../../../utils/types';
 import {heightToDP} from 'react-native-responsive-screens';
 import {useAppSelector} from '../../../redux/store';
 
+type StartPayload = {
+  guide: VoiceGuide | null;
+  muteAudio: boolean;
+};
+
 type Props = {
   isVoiceSettingVisible: boolean;
   title: string;
@@ -13,11 +18,8 @@ type Props = {
   tutors: TutorResponse[];
   /** Opcional: filtrar por exercício atual */
   currentExerciseId?: string;
-  /**
-   * NOVO: avisa o pai qual guia usar ao tocar Start.
-   * Passe `null` para "No voice".
-   */
-  onStartGuide: (guide: VoiceGuide | null) => void;
+  onStartGuide: (payload: StartPayload) => void;
+  onRequireSubscription?: () => void;
 };
 
 const GuidedVoiceSelectionModal = ({
@@ -27,11 +29,13 @@ const GuidedVoiceSelectionModal = ({
   tutors,
   currentExerciseId,
   onStartGuide,
+  onRequireSubscription,
 }: Props) => {
   // All guides vindos do Redux
   const allVoiceGuides = useAppSelector(
     s => s.voiceGuide.allVoiceGuides as VoiceGuide[] | undefined,
   );
+  const userSubscription = useAppSelector(s => s.user?.subscription);
 
   // Abas (garante "No voice" à esquerda)
   const voiceTabs = useMemo(() => {
@@ -62,13 +66,21 @@ const GuidedVoiceSelectionModal = ({
       selectedTutorForList._id === ('none' as any) ||
       (selectedTutorForList.name ?? '').toLowerCase() === 'no voice';
 
-    if (isNoVoice) {return [];}
+    let list = allVoiceGuides;
 
-    const tutorId = String(selectedTutorForList._id);
-    let list = allVoiceGuides.filter(vg => vg.tutor_id?._id && String(vg.tutor_id._id) === tutorId);
+    if (!isNoVoice) {
+      const tutorId = String(selectedTutorForList._id);
+      list = list.filter(
+        vg => vg.tutor_id?._id && String(vg.tutor_id._id) === tutorId,
+      );
+    }
 
     if (currentExerciseId) {
-      list = list.filter(vg => vg.exercise_id?._id && String(vg.exercise_id._id) === String(currentExerciseId));
+      list = list.filter(
+        vg =>
+          vg.exercise_id?._id &&
+          String(vg.exercise_id._id) === String(currentExerciseId),
+      );
     }
 
     return list;
@@ -78,20 +90,42 @@ const GuidedVoiceSelectionModal = ({
     setSelectedGuideIndex(prev => (prev === idx ? null : idx));
   }, []);
 
-  /**
-   * Ao tocar Start:
-   *  - Se aba for "No voice" => onStartGuide(null)
-   *  - Senão => pega o guia selecionado (ou o primeiro) e envia
-   *  - Fecha a modal
-   */
+  const hasActivePaidPlan = useMemo(() => {
+    const plan = userSubscription?.plan ?? 'free';
+    const expiryValue = userSubscription?.expiry;
+    const expiryDate =
+      typeof expiryValue === 'string' || typeof expiryValue === 'number'
+        ? new Date(expiryValue)
+        : expiryValue instanceof Date
+        ? expiryValue
+        : null;
+    // Only treat as active if plan is not free and expiry is in the future
+    return (
+      plan !== 'free' &&
+      expiryDate instanceof Date &&
+      !Number.isNaN(expiryDate.getTime()) &&
+      expiryDate > new Date()
+    );
+  }, [userSubscription?.plan, userSubscription?.expiry]);
+
+  const requiresSubscription = useMemo(() => {
+    const plan = userSubscription?.plan ?? 'free';
+    if (plan === 'free') {
+      return true;
+    }
+
+    return !hasActivePaidPlan;
+  }, [hasActivePaidPlan, userSubscription?.plan]);
+
   const onStart = useCallback(() => {
+
     const isNoVoice =
       selectedTutorForList &&
       ((selectedTutorForList._id as any) === 'none' ||
         (selectedTutorForList.name ?? '').toLowerCase() === 'no voice');
 
-    if (isNoVoice) {
-      onStartGuide(null);
+    if (!isNoVoice && requiresSubscription && onRequireSubscription) {
+      onRequireSubscription();
       close();
       return;
     }
@@ -101,9 +135,20 @@ const GuidedVoiceSelectionModal = ({
         ? filteredGuides[selectedGuideIndex ?? 0]
         : undefined;
 
-    onStartGuide(chosen ?? null);
+    onStartGuide({
+      guide: chosen ?? null,
+      muteAudio: Boolean(isNoVoice),
+    });
     close();
-  }, [selectedTutorForList, filteredGuides, selectedGuideIndex, onStartGuide, close]);
+  }, [
+    selectedTutorForList,
+    filteredGuides,
+    selectedGuideIndex,
+    onStartGuide,
+    close,
+    requiresSubscription,
+    onRequireSubscription,
+  ]);
 
   return (
     <BottomSheet

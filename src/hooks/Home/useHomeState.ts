@@ -73,7 +73,21 @@ export const useHomeState = () => {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isVoiceSettingVisible, toggleVoiceSettings, setIsVoiceSettingVisible] =
     useToggle(false);
-  const [isSubscription, setIsSubscription] = useState<boolean>(true);
+  const [isSubscription, setIsSubscription] = useState<boolean>(() => {
+    const expiryISO = user?.subscription?.expiry;
+    if (expiryISO) {
+      const expiryDate = new Date(expiryISO);
+      const isFreePlan = (user?.subscription?.plan ?? 'free') === 'free';
+      if (
+        isFreePlan &&
+        !Number.isNaN(expiryDate.getTime()) &&
+        expiryDate > new Date()
+      ) {
+        return false;
+      }
+    }
+    return true;
+  });
   const [subscriptionDismissed, setSubscriptionDismissed] =
     useState<boolean>(false);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>('monthly');

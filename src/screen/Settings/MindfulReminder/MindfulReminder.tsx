@@ -16,6 +16,8 @@ import NotificationModal, {
 import {HeaderWithBack} from '../../../components/UI/HeaderWithBack';
 import {SettingsOptionItem} from '../../../components/UI/SettingsOptionItem';
 import {SettingsOptionDivider} from '../../../components/UI/SettingsOptionDivider';
+import {syncFcmTokenWithBackend} from '../../../services/notifications/syncFcmToken';
+import {showLocalNotification} from '../../../services/notifications/NotificationService';
 
 const MindfulReminder: React.FC = () => {
   const user = useAppSelector(state => state.user);
@@ -69,6 +71,7 @@ const MindfulReminder: React.FC = () => {
 
     try {
       const fcmToken = await getFcmToken();
+      await syncFcmTokenWithBackend(fcmToken);
       const body = {
         userId: user._id,
         time: `${hour24}:${minute}`,
@@ -78,6 +81,10 @@ const MindfulReminder: React.FC = () => {
       };
 
       await updateMindfulReminder(body);
+      await showLocalNotification({
+        title: 'Reminder saved',
+        body: `We’ll remind you at ${formatTime()} (${frequency})`,
+      });
     } catch (error) {
       console.error('Time update failed:', error);
       showToast('Failed to update time.', 'error');

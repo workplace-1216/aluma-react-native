@@ -27,6 +27,24 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: widthToDP(isSmallAppleScreen ? 1 : 4),
   },
+  playerStack: {
+    width: '100%',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  musicPlayerWrapper: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  musicPlayerHidden: {
+    opacity: 0,
+    pointerEvents: 'none',
+  },
+  frequencyInfoOverlay: {
+    position: 'absolute',
+    top: 0,
+    width: '100%',
+  },
   volumeSliderExerciseSpacing: {
     marginTop: 0,
   },

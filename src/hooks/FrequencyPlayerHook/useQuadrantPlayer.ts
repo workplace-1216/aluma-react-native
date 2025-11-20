@@ -1,5 +1,4 @@
 import {useCallback, useRef, useEffect, useState} from 'react';
-import {AppState} from 'react-native';
 import Sound from 'react-native-sound';
 import {FREQUENCY} from '../../redux/slice/moodSlice';
 import {useGlobalMusicTimer} from './useGlobalMusicTimer';
@@ -171,17 +170,6 @@ export function useQuadrantAudioPlayer(
       stopQuadrant();
     });
     return unregister;
-  }, [stopQuadrant]);
-
-  useEffect(() => {
-    const listener = AppState.addEventListener('change', state => {
-      if (state === 'background' || state === 'inactive') {
-        stopQuadrant();
-      }
-    });
-    return () => {
-      listener.remove();
-    };
   }, [stopQuadrant]);
 
   return {

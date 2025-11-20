@@ -1,5 +1,4 @@
 import {useEffect, useMemo, useCallback, useRef, useState} from 'react';
-import {AppState} from 'react-native';
 import Sound from 'react-native-sound';
 import {useDispatch} from 'react-redux';
 import useCountdown from '../CountdownHook';
@@ -53,7 +52,6 @@ export function useBaseAudioPlayer(): UseBaseAudioPlayerResult {
   const frequencyDuration = useAppSelector(
     state => state.frequencyQueue.frequencyDuration,
   );
-  const nightMode = useAppSelector(state => state.nightMode);
 
   // Timer hook
   const {timeLeft, isRunning, restart, pause, resume, stop} = useCountdown();
@@ -81,15 +79,9 @@ export function useBaseAudioPlayer(): UseBaseAudioPlayerResult {
   const [duration, setDuration] = useState(0);
 
   const currentFrequency = queue[currentIndex];
-  const nightModeFrequency = nightMode?.frequency[0];
-
   const currentAudioUrl = useMemo(() => {
-    if (nightMode?.isNightMode) {
-      return nightModeFrequency?.default_audio_file || null;
-    }
     return currentFrequency?.default_audio_file || null;
-
-  }, [currentFrequency, nightModeFrequency, nightMode?.isNightMode]);
+  }, [currentFrequency]);
 
   const shouldLoop = !isAllInOneMode && queue.length <= 1;
 
@@ -215,12 +207,7 @@ export function useBaseAudioPlayer(): UseBaseAudioPlayerResult {
 
     setupAudio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    currentAudioUrl,
-    nightMode?.isNightMode,
-    startPositionTracking,
-    stopPositionTracking,
-  ]);
+  }, [currentAudioUrl, startPositionTracking, stopPositionTracking]);
 
   // Auto-play quando a tela carrega (respeitando pause manual)
   useEffect(() => {
@@ -472,17 +459,6 @@ export function useBaseAudioPlayer(): UseBaseAudioPlayerResult {
       pauseHandlerRef.current();
     });
     return unregister;
-  }, []);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', status => {
-      if (status === 'background' || status === 'inactive') {
-        pauseHandlerRef.current();
-      }
-    });
-    return () => {
-      subscription.remove();
-    };
   }, []);
 
   // Cleanup

@@ -1,10 +1,8 @@
-import { getMessaging, getToken, requestPermission } from '@react-native-firebase/messaging';
-import { getApp } from '@react-native-firebase/app';
-import { PermissionsAndroid, Platform } from 'react-native';
+import messaging from '@react-native-firebase/messaging';
+import {PermissionsAndroid, Platform} from 'react-native';
 
 export const getFcmToken = async () => {
   try {
-    // Request notification permission on Android (API 33+)
     if (Platform.OS === 'android' && Platform.Version >= 33) {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
@@ -14,16 +12,18 @@ export const getFcmToken = async () => {
         console.log('Notification permission denied');
         return 'dummyToken';
       }
+    } else if (Platform.OS === 'ios') {
+      const authStatus = await messaging().requestPermission();
+      const enabled =
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      if (!enabled) {
+        console.log('iOS notification permission denied');
+        return 'dummyToken';
+      }
     }
 
-    const messagingInstance = getMessaging(getApp());
-
-    // Request permission only on iOS
-    if (Platform.OS === 'ios') {
-      await requestPermission(messagingInstance);
-    }
-
-    const fcmToken = await getToken(messagingInstance);
+    const fcmToken = await messaging().getToken();
 
     return fcmToken || 'dummyToken';
   } catch (error) {

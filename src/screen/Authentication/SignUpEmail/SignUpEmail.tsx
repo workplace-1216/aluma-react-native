@@ -12,6 +12,7 @@ import {setToken} from '../../../redux/slice/authSlice';
 import {setUser} from '../../../redux/slice/userSlice';
 import {RouteProp, useRoute} from '@react-navigation/native';
 import {getFcmToken} from '../../../utils/getFcmToken';
+import {syncFcmTokenWithBackend} from '../../../services/notifications/syncFcmToken';
 import {fetchAllGuidedVoiceSettings} from '../../../service/tutors/getAllTutors';
 import BackHeader from '../../../components/Features/Authentication/BackHeader';
 import AuthContainer from '../../../components/Features/Authentication/AuthContainer';
@@ -89,6 +90,7 @@ const SignUpEmail: React.FC = () => {
 
       const user = response?.user;
       const token = response?.tokens?.access;
+      await syncFcmTokenWithBackend(fcmToken);
 
       if (token) {
         dispatch(fetchAllExercises());

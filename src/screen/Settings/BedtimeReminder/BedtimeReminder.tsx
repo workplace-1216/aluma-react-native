@@ -16,6 +16,8 @@ import NotificationModal, {
 import {HeaderWithBack} from '../../../components/UI/HeaderWithBack';
 import {SettingsOptionItem} from '../../../components/UI/SettingsOptionItem';
 import {SettingsOptionDivider} from '../../../components/UI/SettingsOptionDivider';
+import {syncFcmTokenWithBackend} from '../../../services/notifications/syncFcmToken';
+import {showLocalNotification} from '../../../services/notifications/NotificationService';
 
 const BedtimeReminder: React.FC = () => {
   const didMountRef = useRef(false);
@@ -69,6 +71,7 @@ const BedtimeReminder: React.FC = () => {
 
     try {
       const fcmToken = await getFcmToken();
+      await syncFcmTokenWithBackend(fcmToken);
       const body = {
         userId: user._id,
         time: `${hour24}:${minute}`,
@@ -78,6 +81,10 @@ const BedtimeReminder: React.FC = () => {
       };
 
       await updateBedtimeReminder(body);
+      await showLocalNotification({
+        title: 'Reminder saved',
+        body: `Bedtime reminder set for ${formatTime()} (${frequency})`,
+      });
     } catch (error) {
       console.error('Time update failed:', error);
       showToast('Failed to update time.', 'error');

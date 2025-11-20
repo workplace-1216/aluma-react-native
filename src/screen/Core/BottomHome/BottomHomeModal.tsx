@@ -33,6 +33,7 @@ interface BottomHomeModalProps {
   globalFeatures: GlobalFeatures;
   isVisible: boolean;
   onClose: () => void;
+  onRequireSubscription: () => void;
   isPlaying: boolean;
   exercise: any;
   onBackFromExercise: () => void;
@@ -40,6 +41,7 @@ interface BottomHomeModalProps {
   pauseMusic: () => void;
   setVolume: (volume: number) => void;
   currentFrequency?: FREQUENCY;
+  backgroundFrequency?: FREQUENCY;
   onVoiceGuidePress: () => void;
   onSharePress: (frequency: FREQUENCY) => void;
 }
@@ -66,6 +68,7 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
   globalFeatures,
   isVisible,
   onClose,
+  onRequireSubscription,
   isPlaying,
   exercise,
   onBackFromExercise,
@@ -73,6 +76,7 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
   pauseMusic,
   setVolume,
   currentFrequency,
+  backgroundFrequency,
   onVoiceGuidePress,
   onSharePress,
 }) => {
@@ -86,6 +90,7 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
   const night = useAppSelector(state => state.nightMode.isNightMode);
   const savedVideos = useAppSelector(state => state.savedVideos.savedVideos);
   const user = useAppSelector(state => state.user);
+  const isFreePlan = (user?.subscription?.plan ?? 'free') === 'free';
   // const isGuestUser = useMemo(
   //   () => user?.provider === 'guest' || user?.isAnonymous,
   //   [user?._id, user?.isAnonymous, user?.provider],
@@ -117,7 +122,6 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
 
   const setNight = useCallback(() => {
     dispatch(toggleNightAndLoad());
-    audioController.pauseAll();
   }, [dispatch]);
 
   useEffect(() => {
@@ -139,10 +143,15 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
     return raw.filter(v => isVideoUrl(v?.url));
   }, [globalFeatures?.weekly_tip_videos]);
 
-  const poster = useMemo(
-    () => currentFrequency?.background_image || currentFrequency?.photo_url,
-    [currentFrequency?.background_image, currentFrequency?.photo_url],
-  );
+  const poster = useMemo(() => {
+    const base = backgroundFrequency ?? currentFrequency;
+    return base?.background_image || base?.photo_url;
+  }, [
+    backgroundFrequency?.background_image,
+    backgroundFrequency?.photo_url,
+    currentFrequency?.background_image,
+    currentFrequency?.photo_url,
+  ]);
 
   const savedVideosMap = useMemo(() => {
     const map = new Map<string, (typeof savedVideos)[number]>();
@@ -256,6 +265,12 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
     (video: VideoEntry, cardPoster?: string) => {
       if (!video?.url) {return;}
 
+      if (isFreePlan) {
+        onClose();
+        onRequireSubscription();
+        return;
+      }
+
       // if (isGuestUser) {
       //   setGuestVideoModalVisible(true);
       //   return;
@@ -274,7 +289,7 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
         });
       }, 200);
     },
-    [isGuestUser, onClose, pauseMusic],
+    [isFreePlan, isGuestUser, onClose, onRequireSubscription, pauseMusic],
   );
 
   const handleVoiceGuidePress = useCallback(
@@ -348,7 +363,9 @@ const BottomHomeModal: React.FC<BottomHomeModalProps> = ({
           <TouchableOpacity style={styles.modalOverlay} onPress={onClose} />
 
           <View style={styles.modalContentFullScreen}>
-            <BackgroundWrapper night={night} currentFrequency={currentFrequency}>
+            <BackgroundWrapper
+              night={night}
+              currentFrequency={backgroundFrequency ?? currentFrequency}>
               <SafeAreaView edges={['top', 'bottom']} style={styles.safeView}>
                 {/* Header with close chevron and menu */}
                 {/* <View style={styles.safeChevronView}>

@@ -3330,6 +3330,11 @@ PODS:
     - RCTTypeSafety
     - React-Core
     - ReactCommon/turbomodule/core
+  - RNNotifee (9.1.8):
+    - React-Core
+    - RNNotifee/NotifeeCore (= 9.1.8)
+  - RNNotifee/NotifeeCore (9.1.8):
+    - React-Core
   - RNPurchases (9.5.4):
     - PurchasesHybridCommon (= 17.10.0)
     - React-Core
@@ -3645,6 +3650,7 @@ DEPENDENCIES:
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - "RNGoogleSignin (from `../node_modules/@react-native-google-signin/google-signin`)"
   - RNIap (from `../node_modules/react-native-iap`)
+  - "RNNotifee (from `../node_modules/@notifee/react-native`)"
   - RNPurchases (from `../node_modules/react-native-purchases`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
@@ -3868,6 +3874,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-google-signin/google-signin"
   RNIap:
     :path: "../node_modules/react-native-iap"
+  RNNotifee:
+    :path: "../node_modules/@notifee/react-native"
   RNPurchases:
     :path: "../node_modules/react-native-purchases"
   RNReanimated:
@@ -4002,6 +4010,7 @@ SPEC CHECKSUMS:
   RNGestureHandler: 0a16f3f13829c01268ae55610a40b57b713c8161
   RNGoogleSignin: e548e9a67bb94980df514f71e107a13d6ebe40d3
   RNIap: 7ad9d42eb59f4dc1226d58987472e7653902d82c
+  RNNotifee: 4a6ee5c7deaf00e005050052d73ee6315dff7ec9
   RNPurchases: e7d57c35ec94625f455981307c1487adde5e3188
   RNReanimated: 69e04af621f711cc3bef253fe4e3e2a2c4505875
   RNScreens: 77f93ec55b749c49549b447527ebf78e990125f3

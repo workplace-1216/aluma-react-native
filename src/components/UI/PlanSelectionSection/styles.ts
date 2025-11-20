@@ -53,10 +53,10 @@ export const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   bullet: {
-    width: 2,
-    height: 2,
-    borderRadius: 2,
-    marginTop: 6,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 4,
     marginRight: 6,
   },
   featureText: {
@@ -83,9 +83,8 @@ export const styles = StyleSheet.create({
     marginBottom: responsiveUtils.relativeHeight(3),
   },
   globalFeatures: {
-    flex: 1,
     width: '100%',
-    marginBottom: responsiveUtils.relativeHeight(3),
+    marginBottom: responsiveUtils.relativeHeight(2),
   },
   globalFeatureRow: {
     flexDirection: 'row',

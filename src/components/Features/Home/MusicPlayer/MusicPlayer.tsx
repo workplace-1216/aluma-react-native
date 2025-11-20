@@ -19,6 +19,7 @@ type Props = {
   onGuestCtaPress: () => void;
   onStartLastGuide: () => void;
   hasLastVoiceGuide: boolean;
+  muteVoiceGuide: boolean;
 };
 
 const MusicPlayer: React.FC<Props> = ({
@@ -31,6 +32,7 @@ const MusicPlayer: React.FC<Props> = ({
   onGuestCtaPress,
   onStartLastGuide,
   hasLastVoiceGuide,
+  muteVoiceGuide,
 }) => {
   const [promptVisible, setPromptVisible] = React.useState(false);
 
@@ -54,6 +56,7 @@ const MusicPlayer: React.FC<Props> = ({
         currentFrequency={currentFrequency}
         onSelectSound={onSelectSound}
         playQuadrant={playQuadrant}
+        muteAudio={muteVoiceGuide}
       />
 
       {promptVisible && (

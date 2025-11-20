@@ -36,14 +36,13 @@ export const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    // width: '80%',
     paddingHorizontal: heightToDP('3%'),
-    alignItems: 'center',
-    alignSelf: 'center',
+    alignItems: 'stretch',
     justifyContent: 'flex-start',
-    paddingTop: heightToDP('5%'),
+    paddingTop: heightToDP('2%'),
   },
   scrollContent: {
+    paddingTop: 0,
     paddingBottom: heightToDP('6%'),
   },
   logoContainer: {
@@ -56,14 +55,16 @@ export const styles = StyleSheet.create({
     width: responsiveUtils.relativeHeight(13.84),
   },
   textWrapper: {
-    width: '70%',
+    width: '100%',
+    paddingHorizontal: heightToDP('1%'),
+    marginBottom: heightToDP('3%'),
   },
   titleText: {
-    fontSize: responsiveUtils.relativeFontSize(19),
+    fontSize: responsiveUtils.relativeFontSize(17),
     color: colors.WHITE,
     fontFamily: Fonts.FigtreeSemi,
     textAlign: 'center',
-    marginBottom: heightToDP('4.183%'),
+    marginBottom: heightToDP('2%'),
   },
   statusCard: {
     width: '100%',
@@ -138,7 +139,7 @@ export const styles = StyleSheet.create({
   buttonContainer: {
     width: '100%',
     paddingHorizontal: heightToDP('3%'),
-    marginTop: heightToDP('4%'),
+    marginTop: heightToDP('3%'),
     alignItems: 'center',
   },
   continueButton: {

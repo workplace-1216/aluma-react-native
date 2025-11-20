@@ -7,8 +7,16 @@ import {ToastProvider} from 'react-native-toast-notifications';
 import BootstrapRevenueCat from './src/components/BootstrapRevenueCat'; // ✅
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {StatusBar} from 'react-native';
+import {initializeNotificationService} from './src/services/notifications/NotificationService';
+import {syncFcmTokenWithBackend} from './src/services/notifications/syncFcmToken';
 
 function App() {
+  React.useEffect(() => {
+    syncFcmTokenWithBackend().catch(() => {});
+    const cleanup = initializeNotificationService();
+    return cleanup;
+  }, []);
+
   return (
     <ReduxProvider>
       <PersistGate loading={null} persistor={persistor}>

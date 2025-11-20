@@ -280,40 +280,13 @@ const Subscriptions = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
           <View style={styles.content}>
-          <View style={styles.statusCard}>
-            <Text style={styles.statusLabel}>{statusLabel}</Text>
-            <Text style={styles.statusDescription}>{statusSubtext}</Text>
-            <View style={styles.statusMetaRow}>
-              <Text style={styles.statusMetaLabel}>Current plan</Text>
-              <Text style={styles.statusMetaValue}>
-                {normalizedCurrentPlan === 'free'
-                  ? 'Free'
-                  : normalizedCurrentPlan === 'yearly'
-                  ? 'Yearly'
-                  : 'Monthly'}
-              </Text>
-            </View>
-            <View style={styles.statusMetaRow}>
-              <Text style={styles.statusMetaLabel}>
-                {isTrialActive ? 'Trial ends' : 'Renews / expires'}
-              </Text>
-              <Text style={styles.statusMetaValue}>
-                {formattedExpiry ?? '—'}
-              </Text>
-            </View>
-            <Text style={styles.statusHint}>
-              Cancel or re-activate anytime from your app store account.
-            </Text>
-            <TouchableOpacity
-              style={styles.manageButton}
-              onPress={handleManageStore}
-              disabled={isLoading}>
-              <Text style={styles.manageButtonText}>Open Store Subscription Settings</Text>
-            </TouchableOpacity>
-          </View>
+          
 
           <View style={styles.textWrapper}>
-            <Text style={styles.titleText}>
+            <Text
+              style={styles.titleText}
+              numberOfLines={1}
+              ellipsizeMode="tail">
               Choose the plan that fits your practice
             </Text>
           </View>
@@ -418,6 +391,37 @@ const Subscriptions = () => {
                 </Text>
               </Text>
             </View>
+          </View>
+          <View style={styles.statusCard}>
+            <Text style={styles.statusLabel}>{statusLabel}</Text>
+            <Text style={styles.statusDescription}>{statusSubtext}</Text>
+            <View style={styles.statusMetaRow}>
+              <Text style={styles.statusMetaLabel}>Current plan</Text>
+              <Text style={styles.statusMetaValue}>
+                {normalizedCurrentPlan === 'free'
+                  ? 'Free'
+                  : normalizedCurrentPlan === 'yearly'
+                  ? 'Yearly'
+                  : 'Monthly'}
+              </Text>
+            </View>
+            <View style={styles.statusMetaRow}>
+              <Text style={styles.statusMetaLabel}>
+                {isTrialActive ? 'Trial ends' : 'Renews / expires'}
+              </Text>
+              <Text style={styles.statusMetaValue}>
+                {formattedExpiry ?? '—'}
+              </Text>
+            </View>
+            <Text style={styles.statusHint}>
+              Cancel or re-activate anytime from your app store account.
+            </Text>
+            <TouchableOpacity
+              style={styles.manageButton}
+              onPress={handleManageStore}
+              disabled={isLoading}>
+              <Text style={styles.manageButtonText}>Open Store Subscription Settings</Text>
+            </TouchableOpacity>
           </View>
           </View>
         </ScrollView>

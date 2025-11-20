@@ -7,14 +7,13 @@ import {toggleNightAndLoad} from '../../redux/slice/nightModeSlice';
 import {useAppSelector} from '../../redux/store';
 import {convertToSeconds} from '../../utils/functions';
 import {startSleepBackgroundTimer} from '../SleepCountdown/backgroundTimerService.ts';
-import { purchasePlan, getCustomerInfoSafe, isPremium } from '../../service/billing/revenuecat';
-import { setFromRC } from '../../redux/slice/subscriptionSlice';
-import { RC_ENABLED } from '../../utils/env';
+import {purchasePlan, getCustomerInfoSafe, isPremium} from '../../service/billing/revenuecat';
+import {setFromRC} from '../../redux/slice/subscriptionSlice';
+import {RC_ENABLED} from '../../utils/env';
 import showToast from '../../components/UI/CustomToast/CustomToast.tsx';
-import { setUser } from '../../redux/slice/userSlice';
-import { updateUser } from '../../service/auth/updateUser';
-import { ENTITLEMENT_ID } from '../../constants/billing';
-import {audioController} from '../../services/audio/AudioController';
+import {setUser} from '../../redux/slice/userSlice';
+import {updateUser} from '../../service/auth/updateUser';
+import {ENTITLEMENT_ID} from '../../constants/billing';
 
 const useHomeHandlers = ({
   setExercise,
@@ -45,76 +44,74 @@ const useHomeHandlers = ({
   const subscriptionIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleSubscriptionContinue = async () => {
-  try {
-    // no RC: close and warn
-    if (!RC_ENABLED) {
-      showToast('Billing disabled (missing keys). Demo mode.', { type: 'warning' });
-      setIsSubscription(false);
-      return;
-    }
-
-    // Ensure plan: if the user previously had annual, force yearly; otherwise use the selectedPlan
-    const plan: 'monthly' | 'yearly' =
-      user?.subscription?.plan === 'annual' ? 'yearly' : selectedPlan;
-
-    showToast(`Starting purchase (${plan})...`, { type: 'normal' });
-
-    await purchasePlan(plan);
-    const info = await getCustomerInfoSafe();
-
-    const premium = isPremium(info);
-    if (premium) {
-      const entitlement = info?.entitlements.active[ENTITLEMENT_ID];
-      const normalizedPlan: 'monthly' | 'annual' =
-        plan === 'yearly' ? 'annual' : 'monthly';
-
-      let expiryISO = entitlement?.expirationDate ?? null;
-      if (!expiryISO) {
-        const computedExpiry = new Date();
-        if (normalizedPlan === 'annual') {
-          computedExpiry.setFullYear(computedExpiry.getFullYear() + 1);
-        } else {
-          computedExpiry.setMonth(computedExpiry.getMonth() + 1);
-        }
-        expiryISO = computedExpiry.toISOString();
+    try {
+      if (!RC_ENABLED) {
+        showToast('Billing disabled (missing keys). Demo mode.', {type: 'warning'});
+        setIsSubscription(false);
+        return;
       }
 
-      const rcExpiry = expiryISO ?? undefined;
-      dispatch(setFromRC({ isPremium: true, plan, expiry: rcExpiry }));
+      const plan: 'monthly' | 'yearly' =
+        user?.subscription?.plan === 'annual' ? 'yearly' : selectedPlan;
 
-      if (user?._id) {
-        const updatedSubscription = {
-          plan: normalizedPlan,
-          expiry: expiryISO ?? user.subscription?.expiry ?? new Date().toISOString(),
-        };
+      showToast(`Starting purchase (${plan})...`, {type: 'normal'});
 
-        dispatch(
-          setUser({
-            ...user,
-            subscription: updatedSubscription,
-          })
-        );
+      await purchasePlan(plan);
+      const info = await getCustomerInfoSafe();
 
-        try {
-          await updateUser(user._id, { subscription: updatedSubscription });
-        } catch (updateErr) {
-          console.warn('[billing] failed to persist subscription update', updateErr);
+      const premium = isPremium(info);
+      if (premium) {
+        const entitlement = info?.entitlements.active[ENTITLEMENT_ID];
+        const normalizedPlan: 'monthly' | 'annual' =
+          plan === 'yearly' ? 'annual' : 'monthly';
+
+        let expiryISO = entitlement?.expirationDate ?? null;
+        if (!expiryISO) {
+          const computedExpiry = new Date();
+          if (normalizedPlan === 'annual') {
+            computedExpiry.setFullYear(computedExpiry.getFullYear() + 1);
+          } else {
+            computedExpiry.setMonth(computedExpiry.getMonth() + 1);
+          }
+          expiryISO = computedExpiry.toISOString();
         }
-      }
 
-      showToast('Subscription activated! 🎉', { type: 'success' });
-      setSubscriptionDismissed(false);
-      setIsSubscription(false);
-    } else {
-      showToast('Purchase did not confirm premium. Try restoring.', { type: 'warning' });
+        const rcExpiry = expiryISO ?? undefined;
+        dispatch(setFromRC({isPremium: true, plan, expiry: rcExpiry}));
+
+        if (user?._id) {
+          const updatedSubscription = {
+            plan: normalizedPlan,
+            expiry: expiryISO ?? user.subscription?.expiry ?? new Date().toISOString(),
+          };
+
+          dispatch(
+            setUser({
+              ...user,
+              subscription: updatedSubscription,
+            }),
+          );
+
+          try {
+            await updateUser(user._id, {subscription: updatedSubscription});
+          } catch (updateErr) {
+            console.warn('[billing] failed to persist subscription update', updateErr);
+          }
+        }
+
+        showToast('Subscription activated! 🎉', {type: 'success'});
+        setSubscriptionDismissed(false);
+        setIsSubscription(false);
+      } else {
+        showToast('Purchase did not confirm premium. Try restoring.', {type: 'warning'});
+        setIsSubscription(true);
+      }
+    } catch (e: any) {
+      console.error('[billing] purchase error', e);
+      showToast(`Purchase error: ${e?.message ?? 'please try again'}`, {type: 'danger'});
       setIsSubscription(true);
     }
-  } catch (e: any) {
-    console.error('[billing] purchase error', e);
-    showToast(`Purchase error: ${e?.message ?? 'please try again'}`, { type: 'danger' });
-    setIsSubscription(true);
-  }
-};
+  };
 
   const onBackFromExercise = () => {
     resume();
@@ -144,7 +141,6 @@ const useHomeHandlers = ({
   const setNight = () => {
     dispatch(toggleNightAndLoad());
     stopQuadrant();
-    audioController.pauseAll();
   };
 
   const setMoodWheelItemIndex = (index: number) => {
@@ -162,21 +158,17 @@ const useHomeHandlers = ({
     });
   };
 
-  // Function to start subscription reminder interval
   const startSubscriptionReminder = () => {
-    // Clear existing interval if any
     if (subscriptionIntervalRef.current) {
       clearInterval(subscriptionIntervalRef.current);
     }
 
-    // Start new interval
     subscriptionIntervalRef.current = setInterval(() => {
       setSubscriptionDismissed(false);
       setIsSubscription(true);
-    }, 30 * 60 * 1000); // 30 minutes
+    }, 30 * 60 * 1000);
   };
 
-  // Function to stop subscription reminder interval
   const stopSubscriptionReminder = () => {
     if (subscriptionIntervalRef.current) {
       clearInterval(subscriptionIntervalRef.current);
@@ -184,7 +176,6 @@ const useHomeHandlers = ({
     }
   };
 
-  // Handle subscription close - restart timer
   const handleSubscriptionClose = () => {
     setIsSubscription(false);
 

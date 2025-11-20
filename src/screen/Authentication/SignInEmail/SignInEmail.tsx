@@ -12,6 +12,7 @@ import {setToken} from '../../../redux/slice/authSlice';
 import {setUser} from '../../../redux/slice/userSlice';
 import showToast from '../../../components/UI/CustomToast/CustomToast';
 import {getFcmToken} from '../../../utils/getFcmToken';
+import {syncFcmTokenWithBackend} from '../../../services/notifications/syncFcmToken';
 import {fetchAllGuidedVoiceSettings} from '../../../service/tutors/getAllTutors';
 import BackHeader from '../../../components/Features/Authentication/BackHeader';
 import AuthContainer from '../../../components/Features/Authentication/AuthContainer';
@@ -62,6 +63,7 @@ const SignInEmail: React.FC = () => {
       }
 
       const response = await login({email, password, fcmToken});
+      await syncFcmTokenWithBackend(fcmToken);
       const user = response?.user;
       const token = response?.tokens?.access;
       if (!token) {

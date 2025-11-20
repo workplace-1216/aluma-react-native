@@ -24,6 +24,7 @@ interface CircularSoundSelectorProps {
   isModalVisible: boolean;
   currentFrequency: FREQUENCY | undefined;
   playQuadrant: (url: string) => void;
+  muteAudio?: boolean;
 }
 
 const MusicWheel: React.FC<CircularSoundSelectorProps> = ({
@@ -33,6 +34,7 @@ const MusicWheel: React.FC<CircularSoundSelectorProps> = ({
   wheelOnLongPress,
   breathWorkData,
   isModalVisible,
+  muteAudio = false,
 }) => {
   const selectedTutor = useAppSelector(state => state.tutor.selectedTutor);
   const voiceGuide = useAppSelector(state => state.voiceGuide.allVoiceGuides);
@@ -48,6 +50,11 @@ const MusicWheel: React.FC<CircularSoundSelectorProps> = ({
     currentFrequency?.moodWheelItems?.[0]?.quadrants || [];
 
   useEffect(() => {
+    if (muteAudio) {
+      setTutorVoiceGuide(undefined);
+      return;
+    }
+
     if (breathWorkData && selectedTutor && voiceGuide) {
       const vg = getVoiceGuideByTutorAndExerciseId(
         voiceGuide,
@@ -56,7 +63,7 @@ const MusicWheel: React.FC<CircularSoundSelectorProps> = ({
       );
       setTutorVoiceGuide(vg);
     }
-  }, [breathWorkData, selectedTutor, voiceGuide]);
+  }, [breathWorkData, selectedTutor, voiceGuide, muteAudio]);
 
   useEffect(() => {
     if (!isModalVisible) {
@@ -139,7 +146,7 @@ const MusicWheel: React.FC<CircularSoundSelectorProps> = ({
       key={item?._id ?? index}
       onPress={() => {
         onSelectSound(index);
-        if (item?.audio_url) {
+        if (!muteAudio && item?.audio_url) {
           playQuadrant(item.audio_url);
         }
       }}

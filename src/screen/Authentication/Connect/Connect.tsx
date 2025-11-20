@@ -24,6 +24,7 @@ import {setUser} from '../../../redux/slice/userSlice';
 import {guestLogin, restoreGuestSession} from '../../../service/auth/guestLogin';
 import createPersistentDeviceId from '../../../utils/createPersistentDeviceId';
 import {getFcmToken} from '../../../utils/getFcmToken';
+import {syncFcmTokenWithBackend} from '../../../services/notifications/syncFcmToken';
 import {fetchAllExercises} from '../../../service/exercise/getAllExercise';
 import {fetchAllGuidedVoice} from '../../../service/guide/gettAllGuideVoice';
 import {fetchAllGuidedVoiceSettings} from '../../../service/tutors/getAllTutors';
@@ -118,6 +119,9 @@ const Connect = () => {
 
       dispatch(setToken(token));
       dispatch(setUser(user));
+      if (fcmToken) {
+        syncFcmTokenWithBackend(fcmToken).catch(() => {});
+      }
       bootstrapAfterAuth();
       reset(routes.HOME);
     },

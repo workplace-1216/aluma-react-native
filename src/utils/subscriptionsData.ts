@@ -1,5 +1,5 @@
 import { PlanCard } from './types';
-
+//'First 7 days free','7 days discount every month',
 export const features = [
   'Full library of frequencies',
   'A new guided breathwork monthly',
@@ -11,12 +11,12 @@ export const plans: PlanCard[] = [
     id: 'monthly',
     title: 'Monthly',
     price: '£8.00',
-    features: ['First 7 days free', 'Automatically renews each month'],
+    features: [ 'Automatically renews each month'],
   },
   {
     id: 'yearly',
     title: 'Yearly',
     price: '£50',
-    features: ['7 days discount every month', 'Automatically renews each year'],
+    features: [ 'Automatically renews each year'],
   },
 ];

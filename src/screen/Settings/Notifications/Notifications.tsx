@@ -15,6 +15,7 @@ import {SettingsOptionItem} from '../../../components/UI/SettingsOptionItem';
 import {widthToDP} from 'react-native-responsive-screens';
 import {getFcmToken} from '../../../utils/getFcmToken';
 import {attachFcmToken} from '../../../service/auth/guestLogin';
+import {syncFcmTokenWithBackend} from '../../../services/notifications/syncFcmToken';
 
 type LoadingToggle = 'allowNotifications' | 'dailyQouteNotification' | null;
 
@@ -63,6 +64,7 @@ const Notifications: React.FC = () => {
             const token = await getFcmToken();
             if (token && token !== 'dummyToken') {
               await attachFcmToken(token);
+              await syncFcmTokenWithBackend(token);
             }
           } catch (attachError) {
             console.warn('Failed to attach FCM token', attachError);
