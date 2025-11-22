@@ -10,13 +10,16 @@ export const plans: PlanCard[] = [
   {
     id: 'monthly',
     title: 'Monthly',
-    price: '£8.00',
-    features: ['First 7 days free', 'Automatically renews each month'],
+    price: '£8.00/month', // Most prominent: billed amount
+    features: [
+      '7 days free, then £8.00/month', // Subordinate: trial info with post-trial price
+      'Automatically renews each month',
+    ],
   },
   {
     id: 'yearly',
     title: 'Yearly',
-    price: '£50',
-    features: ['7 days discount every month', 'Automatically renews each year'],
+    price: '£50/year', // Most prominent: billed amount
+    features: ['Automatically renews each year'],
   },
 ];

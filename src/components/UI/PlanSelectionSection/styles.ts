@@ -30,11 +30,11 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
   },
   planPrice: {
-    fontFamily: Fonts.FigtreeLight,
-    fontSize: responsiveUtils.relativeFontSize(21),
+    fontFamily: Fonts.FigtreeSemi, // Changed from Light to Semi for prominence
+    fontSize: responsiveUtils.relativeFontSize(28), // Increased from 21 to 28 for prominence
     textAlign: 'center',
-    marginBottom: widthToDP(7),
-    fontWeight: '300',
+    marginBottom: widthToDP(3), // Reduced margin to bring price closer to trial info
+    fontWeight: '700', // Increased from 300 to 700 (bold) for maximum prominence
   },
   selectedText: {
     color: colors.BLACK_10,
@@ -61,8 +61,9 @@ export const styles = StyleSheet.create({
   },
   featureText: {
     fontFamily: Fonts.FigtreeLight,
-    fontSize: responsiveUtils.relativeFontSize(14),
+    fontSize: responsiveUtils.relativeFontSize(12), // Reduced from 14 to 12 to be subordinate
     flex: 1,
+    opacity: 0.85, // Added opacity to make it less prominent
   },
   selectedFeatureText: {
     color: colors.BLACK_10,

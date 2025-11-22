@@ -21,7 +21,10 @@ import {webURL} from '../../../constants/constants';
 import {useAppDispatch} from '../../../redux/store';
 import {setToken} from '../../../redux/slice/authSlice';
 import {setUser} from '../../../redux/slice/userSlice';
-import {guestLogin, restoreGuestSession} from '../../../service/auth/guestLogin';
+import {
+  guestLogin,
+  restoreGuestSession,
+} from '../../../service/auth/guestLogin';
 import createPersistentDeviceId from '../../../utils/createPersistentDeviceId';
 import {getFcmToken} from '../../../utils/getFcmToken';
 import {fetchAllExercises} from '../../../service/exercise/getAllExercise';
@@ -50,13 +53,12 @@ const LegalWebModal = ({
     visible={visible}
     animationType="slide"
     presentationStyle="pageSheet"
-    onRequestClose={onClose}
-  >
-    <SafeAreaView style={{ flex: 1 }}>
-      <Pressable onPress={onClose} style={{ padding: 12 }}>
-        <Text style={{ fontWeight: '600' }}>{'‹ Back'}</Text>
+    onRequestClose={onClose}>
+    <SafeAreaView style={{flex: 1}}>
+      <Pressable onPress={onClose} style={{padding: 12}}>
+        <Text style={{fontWeight: '600'}}>{'‹ Back'}</Text>
       </Pressable>
-      <WebView source={{ uri: url }} style={{ flex: 1 }} />
+      <WebView source={{uri: url}} style={{flex: 1}} />
     </SafeAreaView>
   </Modal>
 );
@@ -85,7 +87,9 @@ const Connect = () => {
   const loginGuestSession = useCallback(
     async (overrideGuestId?: string | null) => {
       const [storedGuestDeviceId, deviceId] = await Promise.all([
-        overrideGuestId ? Promise.resolve(overrideGuestId) : getStoredGuestDeviceId(),
+        overrideGuestId
+          ? Promise.resolve(overrideGuestId)
+          : getStoredGuestDeviceId(),
         createPersistentDeviceId(),
       ]);
 
@@ -204,23 +208,21 @@ const Connect = () => {
 
   return (
     <Container>
-      <SafeAreaView edges={[ 'bottom']} style={styles.container}>
+      <SafeAreaView edges={['bottom']} style={styles.container}>
         <BackHeader />
         <AuthContainer description="A mindfulness space for your sleep, meditation and relaxation">
-
           {/* Consent row */}
           <Pressable
             onPress={toggleAccepted}
             accessibilityRole="checkbox"
-            accessibilityState={{ checked: accepted }}
+            accessibilityState={{checked: accepted}}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
               gap: 10,
               paddingHorizontal: 20,
               marginBottom: 12,
-            }}
-          >
+            }}>
             {/* Checkbox box */}
             <View
               style={{
@@ -233,35 +235,32 @@ const Connect = () => {
                 justifyContent: 'center',
                 marginTop: 2,
                 backgroundColor: accepted ? 'white' : 'transparent',
-              }}
-            >
-              {accepted ? (
-                <Text style={{ fontWeight: '800' }}>{'✓'}</Text>
-              ) : null}
+              }}>
+              {accepted ? <Text style={{fontWeight: '800'}}>{'✓'}</Text> : null}
             </View>
 
             {/* Label with links that open modals */}
-            <Text style={{ flex: 1, color: 'white', opacity: 0.9, lineHeight: 20 }}>
+            <Text
+              style={{flex: 1, color: 'white', opacity: 0.9, lineHeight: 20}}>
               I have read and agree to the{' '}
               <Text
-                style={{ textDecorationLine: 'underline' }}
-                onPress={(e) => {
+                style={{textDecorationLine: 'underline'}}
+                onPress={e => {
                   e.stopPropagation();
                   setShowTerms(true);
-                }}
-              >
+                }}>
                 Terms of Use (EULA)
               </Text>{' '}
               and{' '}
               <Text
-                style={{ textDecorationLine: 'underline' }}
-                onPress={(e) => {
+                style={{textDecorationLine: 'underline'}}
+                onPress={e => {
                   e.stopPropagation();
                   setShowPrivacy(true);
-                }}
-              >
+                }}>
                 Privacy Policy
-              </Text>.
+              </Text>
+              .
             </Text>
           </Pressable>
 
@@ -282,66 +281,61 @@ const Connect = () => {
           </View>
 
           <Pressable
-  onPress={handleGuestLogin}
-  disabled={!accepted || guestLoading}
-  hitSlop={8}
-  style={({ pressed }) => [
-    {
-      flexDirection: 'row',
-      alignItems: 'center',
-      alignSelf: 'center',         // fica do tamanho do conteúdo (como um link)
-      opacity: (!accepted || guestLoading) ? 0.6 : 1,
-    },
-    pressed && { opacity: 0.7 },
-  ]}
-  accessibilityRole="button"
-  accessibilityLabel="Explore without signing up"
->
-  {/* Texto sublinhado (apenas o texto, não a linha inteira) */}
-  <Text
-    style={{
-      color: '#fff',
-      fontWeight: '600',
-      textDecorationLine: 'underline',
-      textDecorationColor: '#fff',
-      textDecorationStyle: 'solid',
-    }}
-  >
-    Explore without signing up
-  </Text>
+            onPress={handleGuestLogin}
+            disabled={!accepted || guestLoading}
+            hitSlop={8}
+            style={({pressed}) => [
+              {
+                flexDirection: 'row',
+                alignItems: 'center',
+                alignSelf: 'center', // fica do tamanho do conteúdo (como um link)
+                opacity: !accepted || guestLoading ? 0.6 : 1,
+              },
+              pressed && {opacity: 0.7},
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Explore without signing up">
+            {/* Texto sublinhado (apenas o texto, não a linha inteira) */}
+            <Text
+              style={{
+                color: '#fff',
+                fontWeight: '600',
+                textDecorationLine: 'underline',
+                textDecorationColor: '#fff',
+                textDecorationStyle: 'solid',
+              }}>
+              Explore without signing up
+            </Text>
 
-  {/* Círculo com o chevron em texto, nada de ícone */}
-  <View
-    style={{
-      width: 18,
-      height: 18,
-      marginLeft: 8,
-      borderWidth: 1,
-      borderColor: '#fff',
-      borderRadius: 14,          // número (metade de 28) — nunca '50%' em RN
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-  >
-    {guestLoading ? (
-      <ActivityIndicator size="small" color="#fff" />
-    ) : (
-      <Text
-        style={{
-          color: '#fff',
-          fontSize: 16,
-          fontWeight: '700',
-          // ajuda a centralizar melhor verticalmente
-          lineHeight: 16,
-          includeFontPadding: false,
-        }}
-      >
-        {/* use '›' para parecer um chevron mais bonito que '>' */}
-        ›
-      </Text>
-    )}
-  </View>
-</Pressable>
+            {/* Círculo com o chevron em texto, nada de ícone */}
+            <View
+              style={{
+                width: 18,
+                height: 18,
+                marginLeft: 8,
+                borderWidth: 1,
+                borderColor: '#fff',
+                borderRadius: 14, // número (metade de 28) — nunca '50%' em RN
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+              {guestLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text
+                  style={{
+                    color: '#fff',
+                    fontSize: 16,
+                    fontWeight: '700',
+                    // ajuda a centralizar melhor verticalmente
+                    lineHeight: 16,
+                    includeFontPadding: false,
+                  }}>
+                  {/* use '›' para parecer um chevron mais bonito que '>' */}›
+                </Text>
+              )}
+            </View>
+          </Pressable>
 
           {/* <Pressable
             onPress={handleGuestRestore}
@@ -376,8 +370,14 @@ const Connect = () => {
 
           {/* (Optional) small helper text */}
           {!accepted && (
-            <View style={{ paddingHorizontal: 20 }}>
-              <Text style={{ textAlign: 'center', opacity: 0.7, color: 'white', fontSize: 12 }}>
+            <View style={{paddingHorizontal: 20}}>
+              <Text
+                style={{
+                  textAlign: 'center',
+                  opacity: 0.7,
+                  color: 'white',
+                  fontSize: 12,
+                }}>
                 Please accept the Terms of Use and Privacy Policy to continue.
               </Text>
             </View>

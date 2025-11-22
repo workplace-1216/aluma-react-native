@@ -1,7 +1,12 @@
 apply plugin: "com.android.application"
-apply plugin: 'com.google.gms.google-services'
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+
+// Conditionally apply Google Services plugin only if google-services.json exists
+def googleServicesFile = file("google-services.json")
+if (googleServicesFile.exists()) {
+    apply plugin: 'com.google.gms.google-services'
+}
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -22,7 +27,7 @@ react {
     //   The list of variants to that are debuggable. For those we're going to
     //   skip the bundling of the JS bundle and the assets. By default is just 'debug'.
     //   If you add flavors like lite, prod, etc. you'll have to list your debuggableVariants.
-    // debuggableVariants = ["liteDebug", "prodDebug"]
+    debuggableVariants = ["playDebug", "amazonDebug"]
 
     /* Bundling */
     //   A list containing the node command and its flags. Default is just 'node'.
@@ -83,8 +88,9 @@ android {
         applicationId "com.alumabreath.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 8
+        versionName "1.0.6"
+        missingDimensionStrategy "store", "play"
     }
     signingConfigs {
         debug {
@@ -93,7 +99,26 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            if (project.hasProperty('MYAPP_RELEASE_STORE_FILE')) {
+                storeFile file(MYAPP_RELEASE_STORE_FILE)
+                storePassword MYAPP_RELEASE_STORE_PASSWORD
+                keyAlias MYAPP_RELEASE_KEY_ALIAS
+                keyPassword MYAPP_RELEASE_KEY_PASSWORD
+            }
+        }
     }
+    flavorDimensions "store"
+
+    productFlavors {
+        play {
+            dimension "store"
+        }
+        amazon {
+            dimension "store"
+        }
+    }
+
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
@@ -101,9 +126,30 @@ android {
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+        }
+    }
+
+    // Support for 16 KB page size (required by Google Play)
+    // Using compressed native libraries as workaround for libraries that don't support 16 KB pages
+    // This is an accepted solution by Google Play
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true  // Compressed libraries work with 16 KB pages
+        }
+        resources {
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/license.txt', 'META-INF/NOTICE', 'META-INF/NOTICE.txt', 'META-INF/notice.txt', 'META-INF/ASL2.0', 'META-INF/*.kotlin_module']
+        }
+    }
+
+    // Force compatible version of Google Play Billing library
+    // Google Play requires 6.0.1+ for Android 14 support and latest monetization features
+    // react-native-iap 14.4.46 supports Billing Library 6.0.1+ with new architecture enabled
+    configurations.all {
+        resolutionStrategy {
+            force 'com.android.billingclient:billing:6.1.0'
         }
     }
 }
@@ -116,5 +162,17 @@ dependencies {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
+    }
+}
+
+// Create alias tasks for React Native CLI compatibility
+afterEvaluate {
+    // Create installDebug task that depends on installPlayDebug
+    def installPlayDebugTask = tasks.findByName("installPlayDebug")
+    if (installPlayDebugTask) {
+        def installDebugTask = tasks.maybeCreate("installDebug")
+        installDebugTask.dependsOn(installPlayDebugTask)
+        installDebugTask.group = "install"
+        installDebugTask.description = "Installs the Debug build (defaults to playDebug variant)"
     }
 }

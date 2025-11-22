@@ -7140,10 +7140,10 @@ react-native-gesture-handler@^2.24.0:
     hoist-non-react-statics "^3.3.0"
     invariant "^2.2.4"
 
-react-native-iap@^13.0.4:
-  version "13.0.4"
-  resolved "https://registry.npmjs.org/react-native-iap/-/react-native-iap-13.0.4.tgz"
-  integrity sha512-DFyBWCgohNYkv30tKNz43091Th3ASadKg3hRMu3rcvBWQzzRlLB/4DuFK/o0QIneXcZ+otZquMDrDIBVxWhqWg==
+react-native-iap@14.4.46:
+  version "14.4.46"
+  resolved "https://registry.yarnpkg.com/react-native-iap/-/react-native-iap-14.4.46.tgz#06bdbc3a6310f5ffb01fbcab78f88090bbd916be"
+  integrity sha512-e/yGu21Lrt6zuwirEAHdwPNkYE+xGFp4Nh6EQPASyDhOuZy+k1T9dRs6Z3kv87wStBD9erPWBXy5tT/WjrcRrg==
 
 react-native-iphone-x-helper@^1.0.3:
   version "1.3.1"
@@ -7179,6 +7179,11 @@ react-native-modal-datetime-picker@^18.0.0:
   integrity sha512-0jdvhhraZQlRACwr7pM6vmZ2kxgzJ4CpnmV6J3TVA6MrXMXK6Zo/upRBKkRp0+fTOiKuNblzesA2U59rYo6SGA==
   dependencies:
     prop-types "^15.7.2"
+
+react-native-nitro-modules@^0.31.1:
+  version "0.31.9"
+  resolved "https://registry.yarnpkg.com/react-native-nitro-modules/-/react-native-nitro-modules-0.31.9.tgz#52eded23fbd120063d2f4e843e1ccb0d7e31c229"
+  integrity sha512-w7NtHq4wP6LZgvDs7zbFU3B2uHpRx/bJlSTckw0By8NyEX39fURPGgHyi4a67q1O7I3iFJvbRNWUiiOBbNvHDg==
 
 react-native-purchases@^9.5.4:
   version "9.5.4"
