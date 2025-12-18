@@ -257,6 +257,11 @@ export function useBaseAudioPlayer(): UseBaseAudioPlayerResult {
     try {
       // usuário explicitamente quer tocar novamente
       userPausedRef.current = false;
+      
+      // Resume timer if it was paused (has time left but not running)
+      if (!isRunning && timeLeft > 0) {
+        resume();
+      }
 
       if (!soundRef.current) {
         if (currentAudioUrl) {
@@ -316,6 +321,9 @@ export function useBaseAudioPlayer(): UseBaseAudioPlayerResult {
     try {
       // marca pausa do usuário para bloquear auto-resume
       userPausedRef.current = true;
+      
+      // Pause the timer to prevent auto-resume
+      pause();
 
       if (soundRef.current && isPlayingRef.current) {
         soundRef.current.pause();
@@ -334,6 +342,8 @@ export function useBaseAudioPlayer(): UseBaseAudioPlayerResult {
   };
 
   pauseHandlerRef.current = () => {
+    // Pause both audio and timer to prevent auto-resume
+    pause(); // Pause the countdown timer
     void pauseMusic();
   };
 

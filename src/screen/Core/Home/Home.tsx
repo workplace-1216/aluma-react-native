@@ -146,6 +146,25 @@ const Home: React.FC = () => {
     }, []),
   );
 
+  // Pause audio when any modal or bottom sheet opens
+  useEffect(() => {
+    if (
+      isModalVisible ||
+      isVoiceSettingVisible ||
+      isTimerModalVisible ||
+      isSubscription ||
+      isBottomModalVisible
+    ) {
+      audioController.pauseAll();
+    }
+  }, [
+    isModalVisible,
+    isVoiceSettingVisible,
+    isTimerModalVisible,
+    isSubscription,
+    isBottomModalVisible,
+  ]);
+
   // --- Local Shared Values ---
   const positionSV = useSharedValue(0);
   const durationSV = useSharedValue(1); // Default to 1 to avoid division errors

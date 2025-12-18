@@ -1,5 +1,5 @@
 // components/Features/Home/MusicPlayer/MusicPlayer.tsx
-import React from 'react';
+import React, {useEffect} from 'react';
 import {View, TouchableOpacity, Text} from 'react-native';
 import MusicWheel from '../../../UI/MusicWheel';
 import {SvgTimer} from '../../../../assets/svg';
@@ -8,6 +8,7 @@ import {styles} from './styles';
 import {BreathworkExercise} from '../../../../utils/types';
 import {FREQUENCY} from '../../../../redux/slice/moodSlice';
 import GuestVideoPromptModal from '../../../UI/GuestVideoPromptModal/GuestVideoPromptModal';
+import {audioController} from '../../../../services/audio/AudioController';
 
 type Props = {
   exercise?: BreathworkExercise;
@@ -36,6 +37,13 @@ const MusicPlayer: React.FC<Props> = ({
 
   const pauseWheel = promptVisible;
 
+  // Pause audio when prompt modal opens
+  useEffect(() => {
+    if (promptVisible) {
+      audioController.pauseAll();
+    }
+  }, [promptVisible]);
+
   const handlePrimaryAction = React.useCallback(() => {
     setPromptVisible(false);
     if (isGuestUser) {
@@ -48,9 +56,9 @@ const MusicPlayer: React.FC<Props> = ({
   return (
     <View>
       <MusicWheel
-        wheelOnLongPress={() => setPromptVisible(true)}  // abre GuidedVoice prompt
+        wheelOnLongPress={() => setPromptVisible(true)} // abre GuidedVoice prompt
         breathWorkData={exercise}
-        isModalVisible={pauseWheel}                  // pausa animações
+        isModalVisible={pauseWheel} // pausa animações
         currentFrequency={currentFrequency}
         onSelectSound={onSelectSound}
         playQuadrant={playQuadrant}
@@ -63,7 +71,9 @@ const MusicPlayer: React.FC<Props> = ({
           // isGuest={isGuestUser}
           isGuest={false}
           onSignUpPress={isGuestUser ? handlePrimaryAction : undefined}
-          onStartPress={!isGuestUser && hasLastVoiceGuide ? handlePrimaryAction : undefined}
+          onStartPress={
+            !isGuestUser && hasLastVoiceGuide ? handlePrimaryAction : undefined
+          }
         />
       )}
       <View style={styles.footerRow}>
