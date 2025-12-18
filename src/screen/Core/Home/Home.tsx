@@ -10,10 +10,9 @@ import routes from '../../../constants/routes';
 import {useAppDispatch, useAppSelector} from '../../../redux/store';
 import Header from '../../../components/Features/Home/Header';
 import FrequencyInfo from '../../../components/Features/Home/FrequencyInfo/FrequencyInfo.tsx';
-import MusicPlayer from '../../../components/Features/Home/MusicPlayer/MusicPlayer.tsx';
 import BottomButtons from '../../../components/Features/Home/BottomButtons/BottomButtons.tsx';
-import PlayControls from '../../../components/Features/Home/PlayControls/PlayControls.tsx';
 import ChevronButton from '../../../components/Features/Home/ChevronButton/ChevronButton.tsx';
+import HomePlayer from '../../../components/Features/Home/HomePlayer';
 import useSwipeNavigation from '../../../hooks/Home/useSwipeNavigation.ts';
 import useHomeState from '../../../hooks/Home/useHomeState.ts';
 import RenderSelectionModal from '../../../components/Features/Home/RenderSelectionModal/RenderSelectionModal.tsx';
@@ -22,13 +21,10 @@ import RenderSubscriptionBottomSheet from '../../../components/Features/Home/Ren
 import RenderSleepTimerModal from '../../../components/Features/Home/RenderSleepTimerModal/RenderSleepTimerModal.tsx';
 import {sleepTimerOptions} from '../../../constants/sleepTimer.ts';
 import useHomeHandlers from '../../../hooks/Home/useHomeHandlers.ts';
-import {widthToDP} from 'react-native-responsive-screens';
-import {isSmallAppleScreen} from '../../../utils/isSmallAppleScreen.ts';
 import BackgroundWrapper from '../../../components/UI/BackgroundWrapper/BackgroundWrapper.tsx';
 import {useQuadrantAudioPlayer} from '../../../hooks/FrequencyPlayerHook/useQuadrantPlayer.ts';
 import {useBaseAudioPlayer} from '../../../hooks/FrequencyPlayerHook/useBaseAudioPlayer.ts';
 import BottomHomeModal from '../BottomHome/BottomHomeModal.tsx';
-import VolumeSlider from '../../../components/UI/VolumeSlider/VolumeSlider.tsx';
 import {VoiceGuide, BreathworkExercise} from '../../../utils/types';
 import {selectCurrentFrequency} from '../../../redux/selectors/frequency';
 import {audioController} from '../../../services/audio/AudioController';
@@ -39,7 +35,7 @@ import {RC_ENABLED} from '../../../utils/env';
 const Home: React.FC = () => {
   const dispatch = useAppDispatch();
 
-const {
+  const {
     night,
     breathExercise,
     tutors,
@@ -68,6 +64,7 @@ const {
   } = useHomeState();
 
   // --- Base Audio Playback State (Hooks) ---
+  // Note: These hooks are kept in Home because they're needed by modals and handlers
   const {
     isPlaying,
     position,
@@ -81,8 +78,10 @@ const {
   } = useBaseAudioPlayer();
 
   const sliderVolume = useAppSelector(state => state.volume.volume ?? 1);
+  const displayFrequency = useAppSelector(selectCurrentFrequency);
 
   // --- Quadrant Audio Player ---
+  // Note: stopQuadrant and setVolume are needed by modals and handlers
   const {playQuadrant, stopQuadrant, setVolume} = useQuadrantAudioPlayer(
     displayFrequency,
     night,
@@ -121,16 +120,17 @@ const {
   const expiryISO = user?.subscription?.expiry;
   const expiryDate = expiryISO ? new Date(expiryISO) : null;
   const now = new Date();
-  const hasValidExpiry =
-    !!expiryDate && !Number.isNaN(expiryDate.getTime());
+  const hasValidExpiry = !!expiryDate && !Number.isNaN(expiryDate.getTime());
   const isTrialActive =
     subscriptionPlan === 'free' && hasValidExpiry && expiryDate! > now;
   const disableSubscriptionClose =
     new Date(user?.subscription?.expiry ?? 0) <= now;
 
-  const displayFrequency = useAppSelector(selectCurrentFrequency);
-  const [guestVideoPromptVisible, setGuestVideoPromptVisible] = React.useState(false);
-  const [lastVoiceGuide, setLastVoiceGuide] = React.useState<VoiceGuide | null>(null);
+  const [guestVideoPromptVisible, setGuestVideoPromptVisible] =
+    React.useState(false);
+  const [lastVoiceGuide, setLastVoiceGuide] = React.useState<VoiceGuide | null>(
+    null,
+  );
   const isGuestUser =
     !user ||
     user?.provider === 'guest' ||
@@ -191,14 +191,17 @@ const {
       setLastVoiceGuide(guide);
 
       // 1) Se o backend já populou o exercício no guide:
-      const exPopulado = (guide.exercise_id as unknown) as BreathworkExercise | undefined;
+      const exPopulado = guide.exercise_id as unknown as
+        | BreathworkExercise
+        | undefined;
       if (exPopulado?.steps?.length) {
         setExercise(exPopulado); // MusicWheel detecta steps -> renderiza BreathCircle
         return;
       }
 
       // 2) Se veio só o _id, procure no cache/local (breathExercise)
-      const exId = (guide as any)?.exercise_id?._id || (guide as any)?.exercise_id;
+      const exId =
+        (guide as any)?.exercise_id?._id || (guide as any)?.exercise_id;
       if (exId && Array.isArray(breathExercise)) {
         const found = breathExercise.find(e => String(e._id) === String(exId));
         if (found?.steps?.length) {
@@ -240,7 +243,10 @@ const {
           const status = await checkSubscriptionStatus();
           if (status) {
             dispatch(setFromRC(status));
-            console.log('[Home] Subscription status checked for anonymous user:', status);
+            console.log(
+              '[Home] Subscription status checked for anonymous user:',
+              status,
+            );
           }
         } catch (error) {
           console.warn('[Home] Failed to check subscription status:', error);
@@ -250,7 +256,9 @@ const {
   }, [user?._id, dispatch]);
 
   useEffect(() => {
-    if (!user?.subscription) {return;}
+    if (!user?.subscription) {
+      return;
+    }
 
     const expiryDate = new Date(user.subscription.expiry);
     const now = new Date();
@@ -275,14 +283,13 @@ const {
     };
   }, [stopQuadrant]);
 
-  // Add this to your Home component
+  // Stop quadrant audio when frequency changes (timer auto-advance)
   const currentIndex = useAppSelector(
     state => state.frequencyQueue.currentIndex,
   );
   const prevCurrentIndexRef = useRef(currentIndex);
 
   useEffect(() => {
-    // Stop quadrant audio when frequency changes (timer auto-advance)
     if (prevCurrentIndexRef.current !== currentIndex) {
       stopQuadrant();
       prevCurrentIndexRef.current = currentIndex;
@@ -290,6 +297,17 @@ const {
   }, [currentIndex, stopQuadrant]);
 
   const renderModalsAndSheets = () => (
+    // <>
+    //   <RenderSubscriptionBottomSheet
+    //     isSubscription={isSubscription}
+    //     setIsSubscription={handleSubscriptionClose}
+    //     selectedPlan={selectedPlan}
+    //     setSelectedPlan={setSelectedPlan}
+    //     handleSubscribe={handleSubscriptionContinue}
+    //     disableClose={disableSubscriptionClose}
+    //     isTrialActive={isTrialActive}
+    //   />
+    // </>
     <>
       <RenderSelectionModal
         isModalVisible={isModalVisible}
@@ -344,9 +362,7 @@ const {
     <>
       <GestureDetector gesture={panGesture}>
         <Animated.View style={styles.animatedView}>
-          <BackgroundWrapper
-            night={night}
-            currentFrequency={displayFrequency}>
+          <BackgroundWrapper night={night} currentFrequency={displayFrequency}>
             {frequencyInfo && <View style={styles.overlay} />}
             <SafeAreaView edges={['top', 'bottom']} style={styles.safeAreaView}>
               <Header
@@ -362,49 +378,36 @@ const {
                     onBack={onBackFromFrequencyInfo}
                   />
                 ) : (
-                  // No JSX onde você renderiza o <MusicPlayer />:
-                  <MusicPlayer
-                    exercise={exercise}
-                    setIsTimerModalVisible={toggleTimerModal}
-                    currentFrequency={displayFrequency}
-                    onSelectSound={setMoodWheelItemIndex}
-                    playQuadrant={playQuadrant}
-                    isGuestUser={isGuestUser}
-                    onGuestCtaPress={handleGuestCtaPress}
-                    onStartLastGuide={handleStartLastGuide}
-                    hasLastVoiceGuide={Boolean(lastVoiceGuide)}
-                  />
+                  <>
+                    <HomePlayer
+                      exercise={exercise}
+                      night={night}
+                      setNight={setNight}
+                      setMoodWheelItemIndex={setMoodWheelItemIndex}
+                      onBackFromExercise={onBackFromExercise}
+                      setIsTimerModalVisible={toggleTimerModal}
+                      isGuestUser={isGuestUser}
+                      onGuestCtaPress={handleGuestCtaPress}
+                      onStartLastGuide={handleStartLastGuide}
+                      lastVoiceGuide={lastVoiceGuide}
+                      currentFrequency={displayFrequency}
+                      isPlaying={isPlaying}
+                      onPlayMusic={onPlayMusic}
+                      onPauseMusic={onPauseMusic}
+                      playQuadrant={playQuadrant}
+                      setVolume={setVolume}
+                    />
+                    {!frequencyInfo && (
+                      <BottomButtons
+                        currentFrequency={displayFrequency}
+                        onInfoPress={toggleVoiceSettings}
+                        onVoiceSettingPress={() =>
+                          onSelectFrequencyInfo(displayFrequency)
+                        }
+                      />
+                    )}
+                  </>
                 )}
-                {isSmallAppleScreen ? (
-                  <View style={{height: widthToDP(2)}} />
-                ) : null}
-                <View
-                  style={
-                    exercise ? styles.volumeSliderExerciseSpacing : undefined
-                  }>
-                  <VolumeSlider setVolume={setVolume} />
-                </View>
-                {!frequencyInfo && (
-                  <BottomButtons
-                    currentFrequency={displayFrequency}
-                    onInfoPress={toggleVoiceSettings}
-                    onVoiceSettingPress={() =>
-                      onSelectFrequencyInfo(displayFrequency)
-                    }
-                  />
-                )}
-                {isSmallAppleScreen ? (
-                  <View style={{height: widthToDP(2)}} />
-                ) : null}
-                <PlayControls
-                  exercise={exercise}
-                  isPlaying={isPlaying}
-                  onExerciseBack={onBackFromExercise}
-                  onPlay={onPlayMusic}
-                  onPause={onPauseMusic}
-                  night={night}
-                  onToggleNight={setNight}
-                />
               </View>
               {!frequencyInfo ? (
                 <ChevronButton onPress={handleNavigation} />
