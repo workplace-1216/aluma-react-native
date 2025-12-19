@@ -9,12 +9,13 @@ import {convertToSeconds} from '../../utils/functions';
 import {startSleepBackgroundTimer} from '../SleepCountdown/backgroundTimerService.ts';
 import { purchasePlan, getCustomerInfoSafe, isPremium } from '../../service/billing/revenuecat';
 import { setFromRC } from '../../redux/slice/subscriptionSlice';
-import { RC_ENABLED } from '../../utils/env';
+import { RC_ENABLED, RC_API_KEY_ANDROID, RC_API_KEY_IOS } from '../../utils/env';
 import showToast from '../../components/UI/CustomToast/CustomToast.tsx';
 import { setUser } from '../../redux/slice/userSlice';
 import { updateUser } from '../../service/auth/updateUser';
 import { ENTITLEMENT_ID } from '../../constants/billing';
 import {audioController} from '../../services/audio/AudioController';
+import { Platform } from 'react-native';
 
 const useHomeHandlers = ({
   setExercise,
@@ -43,13 +44,33 @@ const useHomeHandlers = ({
 }) => {
   const user = useAppSelector(state => state.user);
   const subscriptionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isProcessingPurchaseRef = useRef(false);
 
   const handleSubscriptionContinue = async () => {
+    // Prevent multiple simultaneous purchase attempts
+    if (isProcessingPurchaseRef.current) {
+      console.log('[billing] Purchase already in progress, ignoring duplicate request');
+      return;
+    }
+
+    isProcessingPurchaseRef.current = true;
   try {
     // no RC: close and warn
     if (!RC_ENABLED) {
       showToast('Billing disabled (missing keys). Demo mode.', 'info');
       setIsSubscription(false);
+      isProcessingPurchaseRef.current = false;
+      return;
+    }
+
+    // Check if RevenueCat is configured for current platform
+    const apiKey = Platform.OS === 'ios' ? RC_API_KEY_IOS : RC_API_KEY_ANDROID;
+    if (!apiKey || apiKey.trim().length === 0) {
+      console.error(`[billing] RevenueCat API key missing for ${Platform.OS}`);
+      console.error(`[billing] iOS key exists: ${!!RC_API_KEY_IOS}, Android key exists: ${!!RC_API_KEY_ANDROID}`);
+      showToast(`RevenueCat API key missing for ${Platform.OS}. Please add RC_API_KEY_ANDROID to your environment variables.`, 'error');
+      setIsSubscription(false);
+      isProcessingPurchaseRef.current = false;
       return;
     }
 
@@ -57,14 +78,30 @@ const useHomeHandlers = ({
     const plan: 'monthly' | 'yearly' =
       user?.subscription?.plan === 'annual' ? 'yearly' : selectedPlan;
 
-    showToast(`Starting purchase (${plan})...`, 'info');
+    showToast(`Processing ${plan} subscription...`, 'info');
 
-    await purchasePlan(plan);
-    const info = await getCustomerInfoSafe();
+    // Purchase and get customerInfo directly from the purchase response
+    const { customerInfo } = await purchasePlan(plan);
+    
+    // Use customerInfo from purchase, or fetch if not available
+    let info = customerInfo;
+    if (!info) {
+      console.log('[billing] Purchase completed but no customerInfo, fetching...');
+      // Wait a moment for RevenueCat to sync
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      info = await getCustomerInfoSafe();
+    }
+
+    if (!info) {
+      showToast('Purchase completed but unable to verify. Please try restoring purchases.', 'info');
+      setIsSubscription(true);
+      isProcessingPurchaseRef.current = false;
+      return;
+    }
 
     const premium = isPremium(info);
     if (premium) {
-      const entitlement = info?.entitlements.active[ENTITLEMENT_ID];
+      const entitlement = info.entitlements.active[ENTITLEMENT_ID];
       const normalizedPlan: 'monthly' | 'annual' =
         plan === 'yearly' ? 'annual' : 'monthly';
 
@@ -107,6 +144,7 @@ const useHomeHandlers = ({
         showToast('Subscription activated! 🎉 Register to access on all your devices.', 'success');
         setSubscriptionDismissed(false);
         setIsSubscription(false);
+        isProcessingPurchaseRef.current = false;
         return; // Early return to show success message
       }
 
@@ -117,7 +155,9 @@ const useHomeHandlers = ({
       showToast('Purchase did not confirm premium. Try restoring.', 'info');
       setIsSubscription(true);
     }
+    isProcessingPurchaseRef.current = false;
   } catch (e: any) {
+    isProcessingPurchaseRef.current = false;
     const errorMessage = e?.message || e?.userInfo?.NSLocalizedDescription || 'please try again';
 
     // Check if this is a user cancellation (case-insensitive, various forms)
@@ -139,6 +179,8 @@ const useHomeHandlers = ({
       showToast(`Purchase error: ${errorMessage}`, 'error');
       setIsSubscription(true);
     }
+  } finally {
+    isProcessingPurchaseRef.current = false;
   }
 };
 

@@ -8,13 +8,16 @@ import {
   Linking,
   ScrollView,
 } from 'react-native';
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useState, useEffect} from 'react';
 import Container from '../../../components/layout/Container';
 import {styles} from './styles';
 import {goBack, navigate} from '../../../navigation/AppNavigator';
-import {features, plans} from '../../../utils/subscriptionsData';
+import {
+  features,
+  plans as defaultPlans,
+} from '../../../utils/subscriptionsData';
 import {styles as planStyles} from '../../../components/UI/PlanSelectionSection/styles';
-import {SubscriptionPlan} from '../../../utils/types';
+import {SubscriptionPlan, PlanCard} from '../../../utils/types';
 import {HeaderWithBack} from '../../../components/UI/HeaderWithBack';
 import {useAppSelector, useAppDispatch} from '../../../redux/store';
 import colors from '../../../assets/colors';
@@ -23,6 +26,7 @@ import {
   restorePurchases,
   getCustomerInfoSafe,
   isPremium,
+  getProductsFromAppStore,
 } from '../../../service/billing/revenuecat';
 import {setFromRC} from '../../../redux/slice/subscriptionSlice';
 import {setUser} from '../../../redux/slice/userSlice';
@@ -30,13 +34,87 @@ import {updateUser} from '../../../service/auth/updateUser';
 import showToast from '../../../components/UI/CustomToast/CustomToast';
 import routes from '../../../constants/routes';
 import {RC_ENABLED} from '../../../utils/env';
-import {ENTITLEMENT_ID} from '../../../constants/billing';
+import {ENTITLEMENT_ID, PRODUCT_ID_BY_PLAN} from '../../../constants/billing';
 
 const Subscriptions = () => {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>('monthly');
   const [isLoading, setIsLoading] = useState(false);
+  const [plans, setPlans] = useState<PlanCard[]>(defaultPlans);
+  const [isFetchingPrices, setIsFetchingPrices] = useState(false);
   const user = useAppSelector(state => state.user);
   const dispatch = useAppDispatch();
+
+  // Fetch subscription prices from RevenueCat when component mounts
+  useEffect(() => {
+    if (!RC_ENABLED) {
+      return;
+    }
+
+    const fetchPrices = async () => {
+      setIsFetchingPrices(true);
+      try {
+        console.log('[Subscriptions] Fetching prices from RevenueCat...');
+        const products = await getProductsFromAppStore();
+
+        if (products && products.length > 0) {
+          console.log('[Subscriptions] ✅ Fetched products:', products);
+
+          // Map RevenueCat products to PlanCard format
+          const updatedPlans: PlanCard[] = defaultPlans.map(defaultPlan => {
+            // Find matching product by identifier
+            const product = products.find(
+              p => p.identifier === PRODUCT_ID_BY_PLAN[defaultPlan.id],
+            );
+
+            if (product && product.priceString) {
+              // Update price with real price from RevenueCat
+              const priceString = product.priceString;
+
+              // Determine period suffix
+              const periodSuffix =
+                defaultPlan.id === 'monthly' ? '/month' : '/year';
+
+              // Update features with real price if monthly
+              const updatedFeatures =
+                defaultPlan.id === 'monthly'
+                  ? [
+                      `7 days free, then ${priceString}${periodSuffix}`,
+                      'Automatically renews each month',
+                    ]
+                  : defaultPlan.features;
+
+              return {
+                ...defaultPlan,
+                price: `${priceString}${periodSuffix}`,
+                features: updatedFeatures,
+              };
+            }
+
+            // Fallback to default if product not found
+            return defaultPlan;
+          });
+
+          setPlans(updatedPlans);
+          console.log(
+            '[Subscriptions] ✅ Updated plans with RevenueCat prices',
+          );
+        } else {
+          console.warn(
+            '[Subscriptions] ⚠️ No products fetched, using default prices',
+          );
+          setPlans(defaultPlans);
+        }
+      } catch (error) {
+        console.error('[Subscriptions] ❌ Error fetching prices:', error);
+        // Fallback to default plans on error
+        setPlans(defaultPlans);
+      } finally {
+        setIsFetchingPrices(false);
+      }
+    };
+
+    fetchPrices();
+  }, []);
 
   const normalizedCurrentPlan: SubscriptionPlan | 'free' = useMemo(() => {
     const plan = user?.subscription?.plan;
@@ -372,7 +450,7 @@ const Subscriptions = () => {
               <TouchableOpacity
                 style={styles.manageButton}
                 onPress={handleManageStore}
-                disabled={isLoading}>
+                disabled={isLoading || isFetchingPrices}>
                 <Text style={styles.manageButtonText}>
                   Open Store Subscription Settings
                 </Text>
@@ -413,11 +491,12 @@ const Subscriptions = () => {
                       isSelected
                         ? planStyles.selectedCard
                         : planStyles.unselectedCard,
-                      isLoading && styles.planCardDisabled,
+                      (isLoading || isFetchingPrices) &&
+                        styles.planCardDisabled,
                     ]}
                     activeOpacity={0.9}
                     onPress={() => handlePlanSelect(plan.id)}
-                    disabled={isLoading}>
+                    disabled={isLoading || isFetchingPrices}>
                     <Text
                       style={[
                         planStyles.planTitle,
@@ -434,7 +513,7 @@ const Subscriptions = () => {
                           ? planStyles.selectedText
                           : planStyles.unselectedText,
                       ]}>
-                      {plan.price}
+                      {isFetchingPrices ? 'Loading...' : plan.price}
                     </Text>
                     <View style={planStyles.featuresContainer}>
                       {plan.features.map(feature => (
@@ -483,11 +562,12 @@ const Subscriptions = () => {
               <TouchableOpacity
                 style={[
                   styles.continueButton,
-                  isLoading && styles.continueButtonDisabled,
+                  (isLoading || isFetchingPrices) &&
+                    styles.continueButtonDisabled,
                 ]}
                 onPress={handleContinue}
-                disabled={isLoading}>
-                {isLoading ? (
+                disabled={isLoading || isFetchingPrices}>
+                {isLoading || isFetchingPrices ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <Text style={styles.continueButtonText}>
@@ -499,7 +579,7 @@ const Subscriptions = () => {
               <TouchableOpacity
                 style={styles.restoreButton}
                 onPress={handleRestorePurchases}
-                disabled={isLoading}>
+                disabled={isLoading || isFetchingPrices}>
                 <Text style={styles.restoreButtonText}>Restore Purchases</Text>
               </TouchableOpacity>
 

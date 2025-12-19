@@ -1,11 +1,56 @@
 // src/service/billing/revenuecat.ts
-import Purchases, {
-  LOG_LEVEL,
-  PurchasesPackage,
-  PurchasesOffering,
-  CustomerInfo,
-} from 'react-native-purchases';
-import { Platform } from 'react-native';
+import { Platform, InteractionManager, NativeModules } from 'react-native';
+
+// Lazy load Purchases to handle cases where native module isn't loaded
+let Purchases: any = null;
+let LOG_LEVEL: any = null;
+let PurchasesPackage: any = null;
+let PurchasesOffering: any = null;
+let CustomerInfo: any = null;
+
+// Try to load Purchases module
+function loadPurchasesModule() {
+  if (Purchases !== null && Purchases !== undefined) {
+    return Purchases; // Already loaded or attempted
+  }
+  
+  try {
+    const purchasesModule = require('react-native-purchases');
+    Purchases = purchasesModule.default || purchasesModule;
+    LOG_LEVEL = purchasesModule.LOG_LEVEL;
+    PurchasesPackage = purchasesModule.PurchasesPackage;
+    PurchasesOffering = purchasesModule.PurchasesOffering;
+    CustomerInfo = purchasesModule.CustomerInfo;
+    
+    console.log('[RC][loadPurchasesModule] Module structure:', {
+      hasDefault: !!purchasesModule.default,
+      hasConfigure: Purchases && typeof Purchases.configure === 'function',
+      purchasesType: typeof Purchases,
+      isObject: typeof Purchases === 'object',
+      keys: Purchases && typeof Purchases === 'object' ? Object.keys(Purchases).slice(0, 10) : 'N/A',
+    });
+    
+    // Also check if native module is actually linked
+    if (NativeModules && NativeModules.RNPurchases) {
+      console.log('[RC] ✅ Purchases native module is linked');
+    } else {
+      console.warn('[RC] ⚠️ Purchases native module not found in NativeModules');
+      console.warn('[RC] Available NativeModules:', NativeModules ? Object.keys(NativeModules).filter(k => k.toLowerCase().includes('purchase') || k.toLowerCase().includes('revenue')).slice(0, 10) : 'N/A');
+    }
+    
+    if (Purchases && typeof Purchases.configure === 'function') {
+      console.log('[RC] ✅ Purchases module loaded successfully with configure method');
+    } else {
+      console.warn('[RC] ⚠️ Purchases module loaded but configure method not found');
+    }
+    
+    return Purchases;
+  } catch (e) {
+    console.error('[RC] ❌ Failed to load Purchases module:', e);
+    Purchases = undefined; // Mark as failed
+    return null;
+  }
+}
 
 import { ENTITLEMENT_ID, PACKAGE_ID_BY_PLAN, PRODUCT_ID_BY_PLAN, PurchasePlan } from '../../constants/billing';
 
@@ -14,60 +59,255 @@ import { fetchSubscriptions, supportsStoreKitInAppPurchases } from './iap';
 
 let configured = false;
 
+/** Check if RevenueCat is enabled for the current platform */
+function isRevenueCatEnabledForPlatform(): boolean {
+  if (!RC_ENABLED) {
+    return false;
+  }
+  const apiKey = Platform.OS === 'ios' ? RC_API_KEY_IOS : RC_API_KEY_ANDROID;
+  return !!apiKey && apiKey.trim().length > 0;
+}
+
+/** Safely check if Purchases module is available */
+function isPurchasesAvailable(purchasesInstance?: any): boolean {
+  try {
+    // Use provided instance or load the module
+    const purchases = purchasesInstance || loadPurchasesModule();
+    if (!purchases) {
+      return false;
+    }
+    
+    // Check if it's a valid object with required methods
+    const isValid = (
+      typeof purchases === 'object' &&
+      purchases !== null &&
+      typeof purchases.configure === 'function'
+    );
+    
+    if (!isValid) {
+      console.log('[RC][isPurchasesAvailable] Module check failed:', {
+        type: typeof purchases,
+        isNull: purchases === null,
+        hasConfigure: typeof purchases.configure,
+        availableKeys: purchases && typeof purchases === 'object' ? Object.keys(purchases).slice(0, 10) : 'N/A',
+      });
+    }
+    
+    return isValid;
+  } catch (e) {
+    console.error('[RC] Error checking Purchases availability:', e);
+    return false;
+  }
+}
+
+/** Get the Purchases instance, loading it if necessary */
+function getPurchasesInstance(): any {
+  return loadPurchasesModule();
+}
+
+/** Safely wait for interactions and add delay for native module stability */
+async function waitForNativeModuleReady(): Promise<void> {
+  await new Promise<void>((resolve) => {
+    InteractionManager.runAfterInteractions(() => {
+      resolve();
+    });
+  });
+  // Additional delay to ensure native module is stable
+  await new Promise(resolve => setTimeout(resolve, 300));
+}
+
 /** Initialize RevenueCat as early as possible (App bootstrap). */
 export async function initRevenueCat(appUserId?: string) {
+  console.log('[RC][initRevenueCat] Starting initialization...', {
+    platform: Platform.OS,
+    RC_ENABLED,
+    configured,
+    isEnabledForPlatform: isRevenueCatEnabledForPlatform(),
+    iOSKeyExists: !!RC_API_KEY_IOS,
+    androidKeyExists: !!RC_API_KEY_ANDROID,
+  });
+
   try {
-    if (!RC_ENABLED || configured) {
-      console.log('[RC] RevenueCat disabled or already configured. RC_ENABLED:', RC_ENABLED, 'configured:', configured);
+    if (!isRevenueCatEnabledForPlatform() || configured) {
+      const reason = !isRevenueCatEnabledForPlatform()
+        ? `RevenueCat API key missing for ${Platform.OS}`
+        : 'already configured';
+      console.log(`[RC] RevenueCat disabled or ${reason}. RC_ENABLED: ${RC_ENABLED}, configured: ${configured}, platform: ${Platform.OS}`);
+      console.log(`[RC] iOS key exists: ${!!RC_API_KEY_IOS}, Android key exists: ${!!RC_API_KEY_ANDROID}`);
       return;
     }
 
     const apiKey = Platform.OS === 'ios' ? RC_API_KEY_IOS : RC_API_KEY_ANDROID;
-    if (!apiKey) {
+    console.log('[RC][initRevenueCat] Checking API key...', {
+      platform: Platform.OS,
+      apiKeyExists: !!apiKey,
+      apiKeyLength: apiKey?.length || 0,
+      apiKeyPreview: apiKey ? apiKey.substring(0, 10) + '...' : 'none',
+    });
+
+    if (!apiKey || apiKey.trim().length === 0) {
       console.warn('[RC] Missing API key for current platform; skipping configure. Platform:', Platform.OS);
+      console.warn(`[RC] iOS key: ${RC_API_KEY_IOS ? 'exists' : 'missing'}, Android key: ${RC_API_KEY_ANDROID ? 'exists' : 'missing'}`);
       return;
     }
 
+    // Validate API key format
+    const trimmedKey = apiKey.trim();
+    const expectedPrefix = Platform.OS === 'ios' ? 'appl_' : 'goog_';
+    console.log('[RC][initRevenueCat] Validating API key format...', {
+      trimmedKeyLength: trimmedKey.length,
+      expectedPrefix,
+      actualPrefix: trimmedKey.substring(0, 5),
+      isValid: trimmedKey.startsWith(expectedPrefix),
+    });
+
+    if (!trimmedKey.startsWith(expectedPrefix)) {
+      console.error(`[RC] ❌ Invalid API key format for ${Platform.OS}. Expected prefix: ${expectedPrefix}`);
+      console.error(`[RC] Key starts with: ${trimmedKey.substring(0, 5)}`);
+      console.error('[RC] Please verify your API key in RevenueCat dashboard');
+      return;
+    }
+
+    console.log('[RC][initRevenueCat] API key validation passed');
+
     console.log('[RC] Initializing RevenueCat...', {
       platform: Platform.OS,
-      apiKeyPrefix: apiKey.substring(0, 10) + '...',
-      apiKeyLength: apiKey.length,
+      apiKeyPrefix: trimmedKey.substring(0, 10) + '...',
+      apiKeyLength: trimmedKey.length,
       appUserId: appUserId || 'anonymous',
       expectedProducts: Object.values(PRODUCT_ID_BY_PLAN),
       expectedPackages: Object.values(PACKAGE_ID_BY_PLAN),
       entitlementId: ENTITLEMENT_ID,
     });
 
-    // Enable detailed logs while developing
-    Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-
-    await Purchases.configure({
-      apiKey,
-      appUserID: appUserId || undefined,
-      // observerMode: false, // default
+    // Load and check if Purchases module is available
+    const purchases = loadPurchasesModule();
+    console.log('[RC][initRevenueCat] Purchases module loaded:', {
+      purchasesExists: !!purchases,
+      purchasesType: typeof purchases,
+      isNull: purchases === null,
+      isUndefined: purchases === undefined,
+      hasConfigure: purchases && typeof purchases.configure === 'function',
+      hasSetLogLevel: purchases && typeof purchases.setLogLevel === 'function',
+      availableMethods: purchases && typeof purchases === 'object' ? Object.keys(purchases).slice(0, 20) : 'N/A',
     });
+    
+    if (!purchases) {
+      console.error('[RC] ❌ Purchases module not available - failed to load');
+      console.error('[RC] Check: 1) Is react-native-purchases installed? 2) Is native module linked? 3) Rebuild app after installing');
+      configured = false;
+      return;
+    }
+    
+    if (typeof purchases !== 'object' || purchases === null) {
+      console.error('[RC] ❌ Purchases is not a valid object:', typeof purchases);
+      configured = false;
+      return;
+    }
+    
+    if (typeof purchases.configure !== 'function') {
+      console.error('[RC] ❌ Purchases.configure function not available');
+      console.error('[RC] Purchases type:', typeof purchases);
+      console.error('[RC] Available methods:', purchases && typeof purchases === 'object' ? Object.keys(purchases) : 'N/A');
+      console.error('[RC] Purchases value:', purchases);
+      configured = false;
+      return;
+    }
+    
+    console.log('[RC][initRevenueCat] ✅ Purchases module is valid and ready to configure');
+    
+    // Enable detailed logs while developing (with error handling)
+    try {
+      if (purchases && typeof purchases.setLogLevel === 'function' && LOG_LEVEL) {
+        purchases.setLogLevel(LOG_LEVEL.DEBUG);
+      }
+    } catch (logError) {
+      console.warn('[RC] ⚠️ Failed to set log level (non-fatal):', logError);
+    }
 
-    configured = true;
-    console.log('[RC] ✅ configure() done successfully. Platform:', Platform.OS);
+    console.log('[RC][initRevenueCat] Calling Purchases.configure()...');
+    
+    try {
+      // Wait for native module to be ready
+      await waitForNativeModuleReady();
+      
+      await purchases.configure({
+        apiKey: trimmedKey,
+        appUserID: appUserId || undefined,
+        // observerMode: false, // default
+      });
+
+      configured = true;
+      console.log('[RC] ✅ configure() done successfully. Platform:', Platform.OS);
+      console.log('[RC] ✅ configured flag set to:', configured);
+    } catch (configureError) {
+      console.error('[RC] ❌ Purchases.configure() failed:', configureError);
+      console.error('[RC] Error type:', configureError instanceof Error ? configureError.constructor.name : typeof configureError);
+      console.error('[RC] Error message:', configureError instanceof Error ? configureError.message : String(configureError));
+      if (configureError instanceof Error && configureError.stack) {
+        console.error('[RC] Stack trace:', configureError.stack);
+      }
+      configured = false;
+      // Don't rethrow - allow app to continue without RevenueCat
+      return;
+    }
   } catch (e) {
     console.error('[RC] ❌ initRevenueCat error:', e);
+    console.error('[RC] Error type:', e instanceof Error ? e.constructor.name : typeof e);
+    console.error('[RC] Error message:', e instanceof Error ? e.message : String(e));
+    if (e instanceof Error && e.stack) {
+      console.error('[RC] Stack trace:', e.stack);
+    }
+    // Don't rethrow - allow app to continue without RevenueCat
+    configured = false;
   }
 }
 
 /** Link your own user id (optional but recommended if you have login). */
 export async function identifyRevenueCat(appUserId?: string) {
-  if (!RC_ENABLED || !configured) {return;}
-  if (!appUserId) {return;}
+  if (!RC_ENABLED || !configured) {
+    console.log('[RC][identifyRevenueCat] Skipping - RC_ENABLED:', RC_ENABLED, 'configured:', configured);
+    return;
+  }
+  if (!appUserId) {
+    console.log('[RC][identifyRevenueCat] Skipping - no appUserId provided');
+    return;
+  }
 
   try {
-    const result = await Purchases.logIn(appUserId);
+    console.log('[RC][identifyRevenueCat] Calling Purchases.logIn with userId:', appUserId);
+    
+    const purchases = getPurchasesInstance();
+    
+    // Check if Purchases module and logIn function are available
+    if (!purchases || !isPurchasesAvailable(purchases)) {
+      console.error('[RC][identifyRevenueCat] ❌ Purchases module not available');
+      return;
+    }
+    
+    if (typeof purchases.logIn !== 'function') {
+      console.error('[RC][identifyRevenueCat] ❌ Purchases.logIn function not available');
+      return;
+    }
+    
+    // Wait for native module to be ready
+    await waitForNativeModuleReady();
+    
+    const result = await purchases.logIn(appUserId);
     if (result?.created) {
       console.log('[RC] logIn(): purchases migrated to user id:', appUserId);
     } else {
       console.log('[RC] logIn(): user already logged in:', appUserId);
     }
+    console.log('[RC][identifyRevenueCat] ✅ logIn completed successfully');
   } catch (e) {
-    console.warn('[RC] logIn error (non-fatal):', e);
+    console.error('[RC][identifyRevenueCat] ❌ logIn error:', e);
+    console.error('[RC] Error type:', e instanceof Error ? e.constructor.name : typeof e);
+    console.error('[RC] Error message:', e instanceof Error ? e.message : String(e));
+    if (e instanceof Error && e.stack) {
+      console.error('[RC] Stack trace:', e.stack);
+    }
+    // Don't rethrow - allow app to continue
   }
 }
 
@@ -121,7 +361,12 @@ export async function getProductsFromAppStore() {
           console.warn('[RC][getProductsFromAppStore] ========================================');
           try {
             console.log('[RC][getProductsFromAppStore] 🔄 Attempting RevenueCat fallback...');
-            const purchasesProducts = await Purchases.getProducts(productIds);
+            const purchases = getPurchasesInstance();
+            if (!purchases || typeof purchases.getProducts !== 'function') {
+              console.warn('[RC][getProductsFromAppStore] ⚠️ Purchases.getProducts not available');
+              return [];
+            }
+            const purchasesProducts = await purchases.getProducts(productIds);
             const rcProducts = purchasesProducts.map(p => ({
               identifier: p.identifier,
               title: p.title ?? null,
@@ -266,7 +511,11 @@ export async function getOfferings() {
   const directProducts = await getProductsFromAppStore();
 
   try {
-    const offerings = await Purchases.getOfferings();
+    const purchases = getPurchasesInstance();
+    if (!purchases || typeof purchases.getOfferings !== 'function') {
+      throw new Error('Purchases.getOfferings not available');
+    }
+    const offerings = await purchases.getOfferings();
     
     console.log('[RC][getOfferings] Raw offerings response:', {
       hasOfferings: !!offerings,
@@ -361,9 +610,14 @@ export async function getOfferings() {
 
 /** Purchase a plan using Offering packages; robustly finds the correct package. */
 export async function purchasePlan(plan: PurchasePlan) {
-  if (!RC_ENABLED || !configured) {
+  if (!isRevenueCatEnabledForPlatform() || !configured) {
     // Development no-op mode
-    console.log('[RC][purchasePlan] RevenueCat not enabled, returning simulated purchase');
+    const reason = !isRevenueCatEnabledForPlatform() 
+      ? `RevenueCat API key missing for ${Platform.OS}` 
+      : 'RevenueCat not configured';
+    console.log(`[RC][purchasePlan] ${reason}, returning simulated purchase`);
+    console.log(`[RC][purchasePlan] RC_ENABLED: ${RC_ENABLED}, configured: ${configured}, platform: ${Platform.OS}`);
+    console.log(`[RC][purchasePlan] iOS key exists: ${!!RC_API_KEY_IOS}, Android key exists: ${!!RC_API_KEY_ANDROID}`);
     return { customerInfo: null as CustomerInfo | null, simulated: true };
   }
 
@@ -400,7 +654,11 @@ export async function purchasePlan(plan: PurchasePlan) {
     productPrice: target.product.priceString,
   });
 
-  const { customerInfo } = await Purchases.purchasePackage(target);
+  const purchases = getPurchasesInstance();
+  if (!purchases || typeof purchases.purchasePackage !== 'function') {
+    throw new Error('Purchases.purchasePackage not available');
+  }
+  const { customerInfo } = await purchases.purchasePackage(target);
   console.log('[RC][purchasePlan] ✅ Purchase successful');
   return { customerInfo, simulated: false };
 }
@@ -409,16 +667,50 @@ export async function purchasePlan(plan: PurchasePlan) {
 export async function restorePurchases() {
   if (!RC_ENABLED || !configured) {return { customerInfo: null, simulated: true };}
 
-  const info = await Purchases.restorePurchases();
+  const purchases = getPurchasesInstance();
+  if (!purchases || typeof purchases.restorePurchases !== 'function') {
+    throw new Error('Purchases.restorePurchases not available');
+  }
+  const info = await purchases.restorePurchases();
   return { customerInfo: info, simulated: false };
 }
 
 /** Safe wrapper for current customer info. */
 export async function getCustomerInfoSafe() {
-  if (!RC_ENABLED || !configured) {return null;}
+  if (!RC_ENABLED || !configured) {
+    console.log('[RC][getCustomerInfoSafe] Skipping - RC_ENABLED:', RC_ENABLED, 'configured:', configured);
+    return null;
+  }
+  
   try {
-    return await Purchases.getCustomerInfo();
-  } catch (_e) {
+    console.log('[RC][getCustomerInfoSafe] Calling Purchases.getCustomerInfo()...');
+    
+    const purchases = getPurchasesInstance();
+    
+    // Check if Purchases module and getCustomerInfo function are available
+    if (!purchases || !isPurchasesAvailable(purchases)) {
+      console.error('[RC][getCustomerInfoSafe] ❌ Purchases module not available');
+      return null;
+    }
+    
+    if (typeof purchases.getCustomerInfo !== 'function') {
+      console.error('[RC][getCustomerInfoSafe] ❌ Purchases.getCustomerInfo function not available');
+      return null;
+    }
+    
+    // Wait for native module to be ready
+    await waitForNativeModuleReady();
+    
+    const info = await purchases.getCustomerInfo();
+    console.log('[RC][getCustomerInfoSafe] ✅ getCustomerInfo completed successfully');
+    return info;
+  } catch (e) {
+    console.error('[RC][getCustomerInfoSafe] ❌ getCustomerInfo error:', e);
+    console.error('[RC] Error type:', e instanceof Error ? e.constructor.name : typeof e);
+    console.error('[RC] Error message:', e instanceof Error ? e.message : String(e));
+    if (e instanceof Error && e.stack) {
+      console.error('[RC] Stack trace:', e.stack);
+    }
     return null;
   }
 }
