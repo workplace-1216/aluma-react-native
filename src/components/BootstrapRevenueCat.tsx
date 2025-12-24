@@ -1,18 +1,17 @@
 // src/bootstrap/BootstrapRevenueCat.tsx
-import React, {useEffect} from 'react';
-import {Platform} from 'react-native';
-import {useAppSelector, useAppDispatch} from '../redux/store';
+import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
+import { useAppSelector, useAppDispatch } from '../redux/store';
 import {
   initRevenueCat,
   identifyRevenueCat,
   getCustomerInfoSafe,
   isPremium,
-  getProductsFromAppStore,
 } from '../service/billing/revenuecat';
-import {ensureIapConnection} from '../service/billing/iap';
-import {setFromRC} from '../redux/slice/subscriptionSlice';
-import {RC_ENABLED} from '../utils/env';
-import {ENTITLEMENT_ID} from '../constants/billing';
+// Removed react-native-iap dependency - using RevenueCat only
+import { setFromRC } from '../redux/slice/subscriptionSlice';
+import { RC_ENABLED } from '../utils/env';
+import { ENTITLEMENT_ID } from '../constants/billing';
 
 const BootstrapRevenueCat: React.FC = () => {
   const userId = useAppSelector(s => s.user?._id);
@@ -41,14 +40,7 @@ const BootstrapRevenueCat: React.FC = () => {
                 console.log(
                   '[BootstrapRC] ========================================',
                 );
-                console.log(
-                  '[BootstrapRC] 🍎 INITIALIZING IAP for Direct App Store Access',
-                );
-                console.log(
-                  '[BootstrapRC] ========================================',
-                );
-                await ensureIapConnection();
-                console.log('[BootstrapRC] ✅ IAP initialization complete');
+                // Removed react-native-iap initialization - using RevenueCat only
               } catch (error) {
                 console.warn(
                   '[BootstrapRC] ========================================',
@@ -68,9 +60,10 @@ const BootstrapRevenueCat: React.FC = () => {
 
             // Initialize RevenueCat with error handling
             try {
+              // Only initialize if not already configured (prevents duplicate initialization)
               console.log(
                 '[BootstrapRC] Calling initRevenueCat with userId:',
-                userId,
+                userId || 'anonymous',
               );
               await initRevenueCat(userId);
               console.log(
@@ -84,22 +77,27 @@ const BootstrapRevenueCat: React.FC = () => {
               );
 
               // Wrap identifyRevenueCat in separate try-catch to isolate crashes
-              try {
-                console.log('[BootstrapRC] Attempting identifyRevenueCat...');
-                await identifyRevenueCat(userId);
-                console.log('[BootstrapRC] ✅ identifyRevenueCat completed');
-              } catch (identifyError) {
-                console.error(
-                  '[BootstrapRC] ❌ identifyRevenueCat failed (non-fatal):',
-                  identifyError,
-                );
-                console.error(
-                  '[BootstrapRC] Error details:',
-                  identifyError instanceof Error
-                    ? identifyError.stack
-                    : String(identifyError),
-                );
-                // Continue even if identify fails - app can still work
+              // Only call if we have a userId (skip for anonymous users)
+              if (userId) {
+                try {
+                  console.log('[BootstrapRC] Attempting identifyRevenueCat...');
+                  await identifyRevenueCat(userId);
+                  console.log('[BootstrapRC] ✅ identifyRevenueCat completed');
+                } catch (identifyError) {
+                  console.error(
+                    '[BootstrapRC] ❌ identifyRevenueCat failed (non-fatal):',
+                    identifyError,
+                  );
+                  console.error(
+                    '[BootstrapRC] Error details:',
+                    identifyError instanceof Error
+                      ? identifyError.stack
+                      : String(identifyError),
+                  );
+                  // Continue even if identify fails - app can still work
+                }
+              } else {
+                console.log('[BootstrapRC] Skipping identifyRevenueCat - no userId');
               }
 
               console.log(
@@ -118,29 +116,7 @@ const BootstrapRevenueCat: React.FC = () => {
               return;
             }
 
-            // Try to fetch products directly from App Store Connect using react-native-iap
-            // TEMPORARILY DISABLED to isolate crash - re-enable after identifyRevenueCat works
-            if (false && RC_ENABLED) {
-              try {
-                console.log(
-                  '[BootstrapRC] ========================================',
-                );
-                console.log(
-                  '[BootstrapRC] 🔍 FETCHING PRODUCTS FROM APP STORE',
-                );
-                console.log('[BootstrapRC] Method: react-native-iap (direct)');
-                console.log(
-                  '[BootstrapRC] ========================================',
-                );
-                await getProductsFromAppStore();
-                console.log('[BootstrapRC] ✅ Product fetch complete');
-              } catch (error) {
-                console.warn(
-                  '[BootstrapRC] ⚠️ Product fetch failed (non-fatal):',
-                  error,
-                );
-              }
-            }
+            // Removed react-native-iap - using RevenueCat only
 
             if (!RC_ENABLED) {
               return;

@@ -1,11 +1,7 @@
 module.exports = {
   project: {
     ios: {},
-    android: {
-      sourceDir: './android',
-      appName: 'app',
-      packageName: 'com.alumabreath.app',
-    },
+    android: {},
   },
   assets: ['./src/assets/fonts/'],
 };

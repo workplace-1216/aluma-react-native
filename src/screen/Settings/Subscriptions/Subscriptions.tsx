@@ -8,18 +8,18 @@ import {
   Linking,
   ScrollView,
 } from 'react-native';
-import React, {useMemo, useState, useEffect} from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import Container from '../../../components/layout/Container';
-import {styles} from './styles';
-import {goBack, navigate} from '../../../navigation/AppNavigator';
+import { styles } from './styles';
+import { goBack, navigate } from '../../../navigation/AppNavigator';
 import {
   features,
   plans as defaultPlans,
 } from '../../../utils/subscriptionsData';
-import {styles as planStyles} from '../../../components/UI/PlanSelectionSection/styles';
-import {SubscriptionPlan, PlanCard} from '../../../utils/types';
-import {HeaderWithBack} from '../../../components/UI/HeaderWithBack';
-import {useAppSelector, useAppDispatch} from '../../../redux/store';
+import { styles as planStyles } from '../../../components/UI/PlanSelectionSection/styles';
+import { SubscriptionPlan, PlanCard } from '../../../utils/types';
+import { HeaderWithBack } from '../../../components/UI/HeaderWithBack';
+import { useAppSelector, useAppDispatch } from '../../../redux/store';
 import colors from '../../../assets/colors';
 import {
   purchasePlan,
@@ -28,13 +28,13 @@ import {
   isPremium,
   getProductsFromAppStore,
 } from '../../../service/billing/revenuecat';
-import {setFromRC} from '../../../redux/slice/subscriptionSlice';
-import {setUser} from '../../../redux/slice/userSlice';
-import {updateUser} from '../../../service/auth/updateUser';
+import { setFromRC } from '../../../redux/slice/subscriptionSlice';
+import { setUser } from '../../../redux/slice/userSlice';
+import { updateUser } from '../../../service/auth/updateUser';
 import showToast from '../../../components/UI/CustomToast/CustomToast';
 import routes from '../../../constants/routes';
-import {RC_ENABLED} from '../../../utils/env';
-import {ENTITLEMENT_ID, PRODUCT_ID_BY_PLAN} from '../../../constants/billing';
+import { RC_ENABLED } from '../../../utils/env';
+import { ENTITLEMENT_ID, PRODUCT_ID_BY_PLAN } from '../../../constants/billing';
 
 const Subscriptions = () => {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>('monthly');
@@ -61,13 +61,19 @@ const Subscriptions = () => {
 
           // Map RevenueCat products to PlanCard format
           const updatedPlans: PlanCard[] = defaultPlans.map(defaultPlan => {
-            // Find matching product by identifier
-            const product = products.find(
-              p => p.identifier === PRODUCT_ID_BY_PLAN[defaultPlan.id],
-            );
+            // Try to find product by package identifier first ($rc_monthly, $rc_annual)
+            const packageId =
+              defaultPlan.id === 'monthly' ? '$rc_monthly' : '$rc_annual';
+            let product = products.find(p => p.identifier === packageId);
+
+            // If not found by package ID, try by product ID (aluma_monthly, aluma_yearly)
+            if (!product) {
+              const productId = PRODUCT_ID_BY_PLAN[defaultPlan.id];
+              product = products.find(p => p.productId === productId);
+            }
 
             if (product && product.priceString) {
-              // Update price with real price from RevenueCat
+              // Update price with real price from RevenueCat (e.g., "Rs 1,450")
               const priceString = product.priceString;
 
               // Determine period suffix
@@ -83,6 +89,10 @@ const Subscriptions = () => {
                     ]
                   : defaultPlan.features;
 
+              console.log(
+                `[Subscriptions] ✅ Updated ${defaultPlan.id} plan: ${priceString}${periodSuffix}`,
+              );
+
               return {
                 ...defaultPlan,
                 price: `${priceString}${periodSuffix}`,
@@ -90,6 +100,9 @@ const Subscriptions = () => {
               };
             }
 
+            console.warn(
+              `[Subscriptions] ⚠️ Product not found for ${defaultPlan.id}`,
+            );
             // Fallback to default if product not found
             return defaultPlan;
           });
@@ -196,7 +209,7 @@ const Subscriptions = () => {
       const plan: 'monthly' | 'yearly' = selectedPlan;
       showToast(`Processing ${plan} subscription...`, 'info');
 
-      const {customerInfo} = await purchasePlan(plan);
+      const { customerInfo } = await purchasePlan(plan);
       const info = customerInfo || (await getCustomerInfoSafe());
 
       const premium = isPremium(info);
@@ -217,7 +230,7 @@ const Subscriptions = () => {
         }
 
         dispatch(
-          setFromRC({isPremium: true, plan, expiry: expiryISO ?? undefined}),
+          setFromRC({ isPremium: true, plan, expiry: expiryISO ?? undefined }),
         );
 
         // Update user subscription if user is registered (optional)
@@ -241,7 +254,7 @@ const Subscriptions = () => {
           );
 
           try {
-            await updateUser(user._id, {subscription: updatedSubscription});
+            await updateUser(user._id, { subscription: updatedSubscription });
           } catch (updateErr) {
             console.warn(
               '[Subscriptions] Failed to persist subscription update',
@@ -309,7 +322,7 @@ const Subscriptions = () => {
         return;
       }
 
-      const {customerInfo} = await restorePurchases();
+      const { customerInfo } = await restorePurchases();
       const info = customerInfo || (await getCustomerInfoSafe());
 
       const premium = isPremium(info);
@@ -352,7 +365,7 @@ const Subscriptions = () => {
           );
 
           try {
-            await updateUser(user._id, {subscription: updatedSubscription});
+            await updateUser(user._id, { subscription: updatedSubscription });
           } catch (updateErr) {
             console.warn(
               '[Subscriptions] Failed to persist subscription update',
@@ -415,13 +428,15 @@ const Subscriptions = () => {
     <Container>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <HeaderWithBack title={'Subscriptions'} onBack={goBack} />
 
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled">
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.content}>
             <View style={styles.statusCard}>
               <Text style={styles.statusLabel}>{statusLabel}</Text>
@@ -450,7 +465,8 @@ const Subscriptions = () => {
               <TouchableOpacity
                 style={styles.manageButton}
                 onPress={handleManageStore}
-                disabled={isLoading || isFetchingPrices}>
+                disabled={isLoading || isFetchingPrices}
+              >
                 <Text style={styles.manageButtonText}>
                   Open Store Subscription Settings
                 </Text>
@@ -471,7 +487,8 @@ const Subscriptions = () => {
                       opacity: 0.8,
                       fontWeight: '400',
                     },
-                  ]}>
+                  ]}
+                >
                   You can purchase without registering. Registration is optional
                   and enables access to your subscription on all your devices.
                 </Text>
@@ -496,14 +513,16 @@ const Subscriptions = () => {
                     ]}
                     activeOpacity={0.9}
                     onPress={() => handlePlanSelect(plan.id)}
-                    disabled={isLoading || isFetchingPrices}>
+                    disabled={isLoading || isFetchingPrices}
+                  >
                     <Text
                       style={[
                         planStyles.planTitle,
                         isSelected
                           ? planStyles.selectedText
                           : planStyles.unselectedText,
-                      ]}>
+                      ]}
+                    >
                       {plan.title}
                     </Text>
                     <Text
@@ -512,14 +531,16 @@ const Subscriptions = () => {
                         isSelected
                           ? planStyles.selectedText
                           : planStyles.unselectedText,
-                      ]}>
+                      ]}
+                    >
                       {isFetchingPrices ? 'Loading...' : plan.price}
                     </Text>
                     <View style={planStyles.featuresContainer}>
                       {plan.features.map(feature => (
                         <View
                           key={`${plan.id}-${feature}`}
-                          style={planStyles.featureRow}>
+                          style={planStyles.featureRow}
+                        >
                           <View
                             style={[
                               planStyles.bullet,
@@ -536,7 +557,8 @@ const Subscriptions = () => {
                               isSelected
                                 ? planStyles.selectedFeatureText
                                 : planStyles.unselectedFeatureText,
-                            ]}>
+                            ]}
+                          >
                             {feature}
                           </Text>
                         </View>
@@ -566,7 +588,8 @@ const Subscriptions = () => {
                     styles.continueButtonDisabled,
                 ]}
                 onPress={handleContinue}
-                disabled={isLoading || isFetchingPrices}>
+                disabled={isLoading || isFetchingPrices}
+              >
                 {isLoading || isFetchingPrices ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
@@ -579,7 +602,8 @@ const Subscriptions = () => {
               <TouchableOpacity
                 style={styles.restoreButton}
                 onPress={handleRestorePurchases}
-                disabled={isLoading || isFetchingPrices}>
+                disabled={isLoading || isFetchingPrices}
+              >
                 <Text style={styles.restoreButtonText}>Restore Purchases</Text>
               </TouchableOpacity>
 

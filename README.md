@@ -1,268 +1,97 @@
-# BreathWork Mobile App
+This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
-**Brief description:**
-BreathWork is a cross-platform React Native application that connects users with the BreathWork backend. It provides tools for mood tracking, guided breathing exercises, and personal wellness management — available on both Android and iOS.
+# Getting Started
 
----
+> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
 
-## Table of Contents
+## Step 1: Start Metro
 
-* [Project Overview](#project-overview)
-* [Installation](#installation)
-* [Usage](#usage)
-* [Platform Setup](#platform-setup)
+First, you will need to run **Metro**, the JavaScript build tool for React Native.
 
-  * [Android Setup](#android-setup)
-  * [iOS Setup](#ios-setup)
-* [Configuration](#configuration)
-* [Building & Release](#building--release)
+To start the Metro dev server, run the following command from the root of your React Native project:
 
-  * [Android Release Build](#android-release-build)
-  * [iOS Release Build](#ios-release-build)
-* [Acknowledgements](#acknowledgements)
+```sh
+# Using npm
+npm start
 
----
-
-## Project Overview
-
-BreathWork mobile app empowers users on their wellness journey by connecting to the backend’s role-based system, delivering features like mood logging, breathing exercise libraries, and notification management within a responsive and intuitive interface.
-
-### Key Features
-
-* **Cross-Platform Support:** Native-like experience on Android and iOS.
-* **Mood Tracking:** Intuitive mood input and progress visualization.
-* **Breathing Exercises:** Collection of guided routines.
-* **Offline Persistence:** Local storage via AsyncStorage and Redux-Persist.
-* **Navigation:** Seamless app flow with React Navigation.
-* **State Management:** Scalable state architecture using Redux Toolkit.
-* **Responsive UI:** Dynamic layouts with `react-native-responsive-screens`.
-* **Secure API Integration:** Fast and secure communication via Axios.
-
----
-
-## Installation
-
-### Prerequisites
-
-* **Node.js (>=18):** [Download](https://nodejs.org/en/download/)
-* **Yarn (optional):** `npm install -g yarn`
-* **React Native CLI:** Follow official [React Native CLI setup guide](https://reactnative.dev/docs/environment-setup) (important for native builds)
-* **Xcode (macOS only):** Required for iOS builds.
-* **Android Studio:** Required for Android emulator, build tools, and SDKs.
-
-### Steps to Install
-
-```bash
-git clone https://github.com/yourusername/breathwork-mobile.git
-cd breathwork-mobile
-npm install        # or yarn install
+# OR using Yarn
+yarn start
 ```
 
----
+## Step 2: Build and run your app
 
-## Usage
+With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
 
-### Start Development Server
+### Android
 
-```bash
-npm start          # or yarn start
+```sh
+# Using npm
+npm run android
+
+# OR using Yarn
+yarn android
 ```
 
-### Run on Android
+### iOS
 
-```bash
-npm run android    # or yarn android
+For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+
+The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+
+```sh
+bundle install
 ```
 
-### Run on iOS (macOS only)
+Then, and every time you update your native dependencies, run:
 
-```bash
-npm run ios        # or yarn ios
+```sh
+bundle exec pod install
 ```
 
----
+For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
 
-## Platform Setup
+```sh
+# Using npm
+npm run ios
 
-### Android Setup
-
-#### 1. Install Android Studio
-
-* Install Android Studio from [here](https://developer.android.com/studio).
-* Open it and install:
-
-  * Android SDK
-  * Android SDK Platform Tools
-  * Emulator tools
-  * Java SDK 11 (for Gradle compatibility)
-
-#### 2. Set Environment Variables
-
-```bash
-export ANDROID_HOME=$HOME/Library/Android/sdk
-export PATH=$PATH:$ANDROID_HOME/emulator
-export PATH=$PATH:$ANDROID_HOME/platform-tools
+# OR using Yarn
+yarn ios
 ```
 
-Add to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.)
+If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
 
-#### 3. Create Keystore for Release
+This is one way to run your app — you can also build it directly from Android Studio or Xcode.
 
-```bash
-keytool -genkeypair -v -keystore breathwork-release-key.keystore -alias breathwork -keyalg RSA -keysize 2048 -validity 10000
-```
+## Step 3: Modify your app
 
-* Save the `breathwork-release-key.keystore` file to `android/app`.
+Now that you have successfully run the app, let's make changes!
 
-#### 4. Configure `android/gradle.properties`
+Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
 
-Add:
+When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
 
-```
-MYAPP_UPLOAD_STORE_FILE=breathwork-release-key.keystore
-MYAPP_UPLOAD_KEY_ALIAS=breathwork
-MYAPP_UPLOAD_STORE_PASSWORD=your_store_password
-MYAPP_UPLOAD_KEY_PASSWORD=your_key_password
-```
+- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
+- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
 
-#### 5. Update `android/app/build.gradle`
+## Congratulations! :tada:
 
-```gradle
-signingConfigs {
-    release {
-        if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
-            storeFile file(MYAPP_UPLOAD_STORE_FILE)
-            storePassword MYAPP_UPLOAD_STORE_PASSWORD
-            keyAlias MYAPP_UPLOAD_KEY_ALIAS
-            keyPassword MYAPP_UPLOAD_KEY_PASSWORD
-        }
-    }
-}
+You've successfully run and modified your React Native App. :partying_face:
 
-buildTypes {
-    release {
-        signingConfig signingConfigs.release
-        ...
-    }
-}
-```
+### Now what?
 
----
+- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
+- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
 
-### iOS Setup
+# Troubleshooting
 
-#### 1. Install Xcode (from Mac App Store)
+If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
 
-* Open Xcode and install command line tools.
-* Ensure the simulator runs.
+# Learn More
 
-#### 2. Install CocoaPods Dependencies
+To learn more about React Native, take a look at the following resources:
 
-```bash
-cd ios && pod install && cd ..
-```
-
-#### 3. Setup Apple Developer Account
-
-1. Enroll at: [https://developer.apple.com/account](https://developer.apple.com/account)
-2. Create a new App ID and provisioning profile.
-3. In Xcode:
-
-   * Open `ios/BreathWork.xcworkspace`.
-   * Select your team under *Signing & Capabilities*.
-   * Set a unique Bundle Identifier.
-
-#### 4. Set up iOS Environment
-
-If using `.env` for API configuration, use the `react-native-dotenv` library or `react-native-config` for native access.
-
----
-
-## Configuration
-
-### Environment Variables
-
-Create a `.env` file in the project root:
-
-```env
-API_BASE_URL=https://api.breathworkapp.com
-```
-
-To access in JS:
-
-```js
-import Config from 'react-native-config';
-console.log(Config.API_BASE_URL);
-```
-
----
-
-## Building & Release
-
-### Android Release Build
-
-#### 1. Build APK
-
-```bash
-cd android
-./gradlew assembleRelease
-```
-
-Find the output at:
-
-```
-android/app/build/outputs/apk/release/app-release.apk
-```
-
-#### 2. Build AAB (Android App Bundle for Play Store)
-
-```bash
-./gradlew bundleRelease
-```
-
-Output at:
-
-```
-android/app/build/outputs/bundle/release/app-release.aab
-```
-
-Upload `.aab` to the Google Play Console.
-
----
-
-### iOS Release Build
-
-#### 1. Open Project in Xcode
-
-```bash
-open ios/BreathWork.xcworkspace
-```
-
-#### 2. Archive & Distribute
-
-1. Select `Generic iOS Device` as the target.
-2. Product → Archive.
-3. Distribute via App Store or Ad Hoc using your Apple Developer credentials.
-
-#### 3. Alternatively Use CLI (Optional)
-
-```bash
-xcodebuild -workspace ios/BreathWork.xcworkspace -scheme BreathWork -configuration Release -derivedDataPath ios/build
-```
-
----
-
-## Acknowledgements
-
-### Libraries
-
-* **React Native** – Framework for building native mobile apps.
-* **React Navigation** – Handles routing and navigation.
-* **Redux Toolkit** – Centralized state management.
-* **Redux Persist** – Persistence for Redux state.
-* **Axios** – HTTP requests.
-* **Async Storage** – Local key-value storage.
-* **Gesture Handler & Reanimated** – Native animations and gestures.
-* **Responsive Screens** – Utility for responsive UIs.
-* **Safe Area Context** – Manages device safe zones.
-* **SVG Support** – Scalable vector graphics support.# alumaApp
+- [React Native Website](https://reactnative.dev) - learn more about React Native.
+- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
+- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
+- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
+- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.

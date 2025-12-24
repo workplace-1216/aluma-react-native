@@ -1,12 +1,35 @@
+/**
+ * RevenueCat Test App
+ *
+ * @format
+ */
+
+// import { StatusBar, useColorScheme } from 'react-native';
+// import { SafeAreaProvider } from 'react-native-safe-area-context';
+// import RevenueCatTestScreen from './RevenueCatTestScreen';
+
+// function App() {
+//   const isDarkMode = useColorScheme() === 'dark';
+
+//   return (
+//     <SafeAreaProvider>
+//       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+//       <RevenueCatTestScreen />
+//     </SafeAreaProvider>
+//   );
+// }
+
+// export default App;
+
 import React from 'react';
 import AppNavigator from './src/navigation/AppNavigator';
-import {ReduxProvider} from './src/redux/provider';
-import {PersistGate} from 'redux-persist/integration/react';
-import {persistor} from './src/redux/store';
-import {ToastProvider} from 'react-native-toast-notifications';
-import BootstrapRevenueCat from './src/components/BootstrapRevenueCat'; // ✅
-import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {StatusBar} from 'react-native';
+import { ReduxProvider } from './src/redux/provider';
+import { PersistGate } from 'redux-persist/integration/react';
+import { persistor } from './src/redux/store';
+import { ToastProvider } from 'react-native-toast-notifications';
+import BootstrapRevenueCat from './src/components/BootstrapRevenueCat';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar } from 'react-native';
 
 function App() {
   return (
